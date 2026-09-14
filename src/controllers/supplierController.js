@@ -2,18 +2,20 @@ const { Supplier } = require('../models/Supplier');
 
 const createSupplier = async (req, res, next) => {
   try {
-    let supplierCode = req.body.supplierCode;
+    let supplierCode = req.body.id || req.body.supplierCode;
     if (!supplierCode) {
       supplierCode = `SUP-${Date.now().toString().slice(-4)}`;
     }
     
-    // Support legacy field name 'name' if supplierName is missing
-    const supplierName = req.body.supplierName || req.body.name;
+    const payload = { ...req.body };
+    delete payload.id;
+    
+    const companyName = payload.companyName || payload.supplierName || payload.name;
     
     const supplier = await Supplier.create({
-      ...req.body,
+      ...payload,
       supplierCode,
-      supplierName,
+      companyName,
       company: req.user?.companyId || req.body.company
     });
     res.status(201).json({ success: true, data: supplier });
@@ -47,7 +49,10 @@ const getSupplierById = async (req, res, next) => {
 
 const updateSupplier = async (req, res, next) => {
   try {
-    const supplier = await Supplier.findByIdAndUpdate(req.params.id, req.body, {
+    const payload = { ...req.body };
+    delete payload.id;
+    
+    const supplier = await Supplier.findByIdAndUpdate(req.params.id, payload, {
       new: true,
       runValidators: true
     });
@@ -63,9 +68,12 @@ const updateSupplier = async (req, res, next) => {
 
 const patchSupplier = async (req, res, next) => {
   try {
+    const payload = { ...req.body };
+    delete payload.id;
+    
     const supplier = await Supplier.findByIdAndUpdate(
       req.params.id, 
-      { $set: req.body }, 
+      { $set: payload }, 
       { new: true, runValidators: true }
     );
     if (!supplier) {
