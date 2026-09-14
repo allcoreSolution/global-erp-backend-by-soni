@@ -6,7 +6,7 @@ const createCustomer = async (req, res, next) => {
     if (!customerCode) {
       customerCode = `CUST-${Date.now().toString().slice(-4)}`;
     }
-    
+
     const customer = await Customer.create({
       ...req.body,
       customerCode
@@ -59,8 +59,8 @@ const updateCustomer = async (req, res, next) => {
 const patchCustomer = async (req, res, next) => {
   try {
     const customer = await Customer.findByIdAndUpdate(
-      req.params.id, 
-      { $set: req.body }, 
+      req.params.id,
+      { $set: req.body },
       { new: true, runValidators: true }
     );
     if (!customer) {
