@@ -6,9 +6,13 @@ const {
   getSupplierById,
   updateSupplier,
   patchSupplier,
-  deleteSupplier
+  deleteSupplier,
+  uploadDocument
 } = require('../controllers/supplierController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
+const uploadLocal = require('../middlewares/uploadLocal');
+
+router.post('/upload', protect, uploadLocal.single('file'), uploadDocument);
 
 router.get('/', protect, getSuppliers);
 router.get('/:id', protect, getSupplierById);

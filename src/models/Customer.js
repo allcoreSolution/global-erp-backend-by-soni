@@ -35,6 +35,11 @@ const customerSchema = new mongoose.Schema({
   billingAddress: { type: addressSchema, default: () => ({}) },
   shippingAddress: { type: addressSchema, default: () => ({}) },
   
+  gstCertificate: { type: String, default: '' },
+  panCard: { type: String, default: '' },
+  shopLicense: { type: String, default: '' },
+  otherDocuments: { type: String, default: '' },
+  
   salesRep: { type: String, default: '' },
   paymentTerms: { type: String, default: 'Due on Receipt' },
   creditLimit: { type: Number, default: 0 },

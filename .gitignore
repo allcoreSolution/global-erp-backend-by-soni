@@ -6,3 +6,4 @@ dist/
 
 test_*.js
 .DS_Store
+public/uploads/

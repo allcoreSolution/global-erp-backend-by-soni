@@ -6,9 +6,13 @@ const {
   getCustomerById,
   updateCustomer,
   patchCustomer,
-  deleteCustomer
+  deleteCustomer,
+  uploadDocument
 } = require('../controllers/customerController');
+const uploadLocal = require('../middlewares/uploadLocal');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
+
+router.post('/upload', protect, uploadLocal.single('file'), uploadDocument);
 
 router.get('/', protect, getCustomers);
 router.get('/:id', protect, getCustomerById);

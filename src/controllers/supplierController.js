@@ -99,11 +99,25 @@ const deleteSupplier = async (req, res, next) => {
   }
 };
 
+const uploadDocument = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      res.status(400);
+      return next(new Error('No file uploaded'));
+    }
+    const filePath = `/uploads/documents/${req.file.filename}`;
+    res.json({ success: true, url: filePath });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createSupplier,
   getSuppliers,
   getSupplierById,
   updateSupplier,
   patchSupplier,
-  deleteSupplier
+  deleteSupplier,
+  uploadDocument
 };
