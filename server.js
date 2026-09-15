@@ -192,23 +192,21 @@ app.use('/api/designations', designationRoutes);
 
 // Shift Setup Routes
 const shiftSetupRoutes = require('./src/routes/shiftSetupRoutes');
-app.use('/api/shift-setup', shiftSetupRoutes);
+app.use('/api/shift-setups', shiftSetupRoutes);
 
 // HRMS Master Settings Routes
 const hrmsMasterSettingRoutes = require('./src/routes/hrmsMasterSettingRoutes');
-app.use('/api/hrms-master-settings', hrmsMasterSettingRoutes);
+app.use('/api/hrms-settings', hrmsMasterSettingRoutes);
 
 // Expense Claim Routes
 const expenseClaimRoutes = require('./src/routes/expenseClaimRoutes');
-app.use('/api/expenses', expenseClaimRoutes);
+app.use('/api/expense-claims', expenseClaimRoutes);
 
 // Performance Rating Routes
 const performanceRatingRoutes = require('./src/routes/performanceRatingRoutes');
-app.use('/api/performance', performanceRatingRoutes);
+app.use('/api/performance-ratings', performanceRatingRoutes);
 
-// Removed duplicates for Targets, Departments and Designations
-
-// Shift Timing Routes
+// Shift Timings Routes
 const shiftTimingRoutes = require('./src/routes/shiftTimingRoutes');
 app.use('/api/shift-timings', shiftTimingRoutes);
 
@@ -226,20 +224,19 @@ app.use('/api/holidays', holidayRoutes);
 const attendanceRoutes = require('./src/routes/attendanceRoutes');
 app.use('/api/attendances', attendanceRoutes);
 
-// Removed duplicate for Salary Structure
-
 // Payslip Routes
 const payslipRoutes = require('./src/routes/payslipRoutes');
 app.use('/api/payslips', payslipRoutes);
 
-// Statutory Routes (PF & ESI)
+// Statutory Routes
 const statutoryRoutes = require('./src/routes/statutoryRoutes');
 app.use('/api/statutory', statutoryRoutes);
 
-// Accounting & Voucher Routes
+// Account Ledger Routes
 const accountLedgerRoutes = require('./src/routes/accountLedgerRoutes');
-app.use('/api/ledgers', accountLedgerRoutes);
+app.use('/api/account-ledgers', accountLedgerRoutes);
 
+// Voucher Routes
 const voucherRoutes = require('./src/routes/voucherRoutes');
 app.use('/api/vouchers', voucherRoutes);
 
