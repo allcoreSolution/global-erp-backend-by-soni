@@ -119,11 +119,11 @@ const productSchema = new mongoose.Schema({
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
 }, { timestamps: true });
 
-const Brand = mongoose.model('Brand', brandSchema);
-const Category = mongoose.model('Category', categorySchema);
-const Unit = mongoose.model('Unit', unitSchema);
-const Adjustment = mongoose.model('Adjustment', adjustmentSchema);
-const StockCount = mongoose.model('StockCount', stockCountSchema);
-const Product = mongoose.model('Product', productSchema);
+const Brand = mongoose.models.Brand || mongoose.model('Brand', brandSchema);
+const Category = mongoose.models.Category || mongoose.model('Category', categorySchema);
+const Unit = mongoose.models.Unit || mongoose.model('Unit', unitSchema);
+const Adjustment = mongoose.models.Adjustment || mongoose.model('Adjustment', adjustmentSchema);
+const StockCount = mongoose.models.StockCount || mongoose.model('StockCount', stockCountSchema);
+const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 
 module.exports = { Brand, Category, Unit, Adjustment, StockCount, Product };

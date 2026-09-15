@@ -13,6 +13,6 @@ const stockCountSchema = new mongoose.Schema({
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
 }, { timestamps: true });
 
-const StockCount = mongoose.model('StockCount', stockCountSchema);
+const StockCount = mongoose.models.StockCount || mongoose.model('StockCount', stockCountSchema);
 
 module.exports = { StockCount };

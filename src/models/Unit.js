@@ -9,6 +9,6 @@ const unitSchema = new mongoose.Schema({
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
 }, { timestamps: true });
 
-const Unit = mongoose.model('Unit', unitSchema);
+const Unit = mongoose.models.Unit || mongoose.model('Unit', unitSchema);
 
 module.exports = { Unit };
