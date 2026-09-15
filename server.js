@@ -152,9 +152,7 @@ app.use('/api/debit-notes', debitNoteRoutes);
 const clearanceRoutes = require('./src/routes/clearanceRoutes');
 app.use('/api/clearances', clearanceRoutes);
 
-// Bank Payment Routes
-const bankPaymentRoutes = require('./src/routes/bankPaymentRoutes');
-app.use('/api/payments', bankPaymentRoutes);
+// Removed duplicate for Bank Payment
 
 // Contra Entry Routes
 const contraEntryRoutes = require('./src/routes/contraEntryRoutes');
@@ -170,9 +168,7 @@ app.use('/api/journal-vouchers', journalVoucherRoutes);
 // const hrmsRoutes = require('./src/routes/hrmsRoutes');
 // app.use('/api/hrms', hrmsRoutes);
 
-// Employee Routes
-const employeeRoutes = require('./src/routes/employeeRoutes');
-app.use('/api/employees', employeeRoutes);
+// Removed duplicate for Employee Routes
 
 // Salary Structure Routes
 const salaryStructureRoutes = require('./src/routes/salaryStructureRoutes');
@@ -216,9 +212,7 @@ app.use('/api/performance', performanceRatingRoutes);
 const shiftTimingRoutes = require('./src/routes/shiftTimingRoutes');
 app.use('/api/shift-timings', shiftTimingRoutes);
 
-// HRMS Master Settings Routes
-const hrmsMasterSettingRoutes = require('./src/routes/hrmsMasterSettingRoutes');
-app.use('/api/hrms-settings', hrmsMasterSettingRoutes);
+// Removed duplicate for HRMS Master Settings
 
 // Leave Request Routes
 const leaveRequestRoutes = require('./src/routes/leaveRequestRoutes');
