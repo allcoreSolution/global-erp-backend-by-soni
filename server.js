@@ -52,6 +52,10 @@ app.use('/api/users', userRoutes);
 const roleRoutes = require('./src/routes/roleRoutes');
 app.use('/api/roles', roleRoutes);
 
+// Upload Routes
+const uploadRoutes = require('./src/routes/uploadRoutes');
+app.use('/api/upload', uploadRoutes);
+
 // Employee Routes
 const employeeRoutes = require('./src/routes/employeeRoutes');
 app.use('/api/employees', employeeRoutes);

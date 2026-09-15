@@ -86,26 +86,11 @@ const deleteCustomer = async (req, res, next) => {
   }
 };
 
-const uploadDocument = async (req, res, next) => {
-  try {
-    if (!req.file) {
-      res.status(400);
-      return next(new Error('No file uploaded'));
-    }
-    // Return the relative path starting with /uploads/documents/...
-    const filePath = `/uploads/documents/${req.file.filename}`;
-    res.json({ success: true, url: filePath });
-  } catch (error) {
-    next(error);
-  }
-};
-
 module.exports = {
   createCustomer,
   getCustomers,
   getCustomerById,
   updateCustomer,
   patchCustomer,
-  deleteCustomer,
-  uploadDocument
+  deleteCustomer
 };
