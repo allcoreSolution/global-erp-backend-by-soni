@@ -1,9 +1,19 @@
 const mongoose = require('mongoose');
 
 const hrmsMasterSettingSchema = new mongoose.Schema({
-  priorities: [{ type: String, trim: true }],
-  statuses: [{ type: String, trim: true }],
-  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
+  company: { type: String, required: true, unique: true }, // one setting per company
+
+  priorities: {
+    type: [String],
+    default: ['High', 'Medium', 'Low']
+  },
+  
+  statuses: {
+    type: [String],
+    default: ['In Progress', 'Completed', 'Behind Schedule']
+  }
 }, { timestamps: true });
 
-module.exports = mongoose.model('HrmsMasterSetting', hrmsMasterSettingSchema);
+const HrmsMasterSetting = mongoose.model('HrmsMasterSetting', hrmsMasterSettingSchema);
+
+module.exports = { HrmsMasterSetting };

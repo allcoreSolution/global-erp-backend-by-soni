@@ -2,14 +2,14 @@ const { Branch } = require('../models/Branch');
 
 const createBranch = async (req, res, next) => {
   try {
-    let branchCode = req.body.branchCode;
-    if (!branchCode) {
-      branchCode = `BR-${Date.now().toString().slice(-4)}`;
+    let id = req.body.id;
+    if (!id) {
+      id = `BR-${Date.now().toString().slice(-4)}`;
     }
     
     const branch = await Branch.create({
       ...req.body,
-      branchCode,
+      id,
       company: req.user?.companyId || req.body.company
     });
     res.status(201).json({ success: true, data: branch });

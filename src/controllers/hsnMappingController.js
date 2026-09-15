@@ -2,14 +2,14 @@ const { HsnMapping } = require('../models/HsnMapping');
 
 const createHsnMapping = async (req, res, next) => {
   try {
-    let mappingId = req.body.mappingId;
-    if (!mappingId) {
-      mappingId = `TM-${Date.now().toString().slice(-4)}`;
+    let id = req.body.id;
+    if (!id) {
+      id = `HSN-${Date.now().toString().slice(-4)}`;
     }
     
     const hsnMapping = await HsnMapping.create({
       ...req.body,
-      mappingId,
+      id,
       company: req.user?.companyId || req.body.company
     });
     res.status(201).json({ success: true, data: hsnMapping });

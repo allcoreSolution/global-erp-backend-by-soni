@@ -5,10 +5,17 @@ const { Product } = require('../models/Product');
 // @route   POST /api/sales
 // @access  Private
 const createSale = async (req, res, next) => {
-  const { customerName, customerMobile, items, discountTotal, paymentMode, amountPaid } = req.body;
+  const { 
+    customer, customerMobile, orderItems, discountTotal, paymentMode, amountPaid,
+    saleDate, referenceNo, biller, warehouse, currency, exchangeRate, 
+    orderTax, discountType, discountValue, shippingCost, saleStatus, 
+    paymentStatus, saleNote, staffNote 
+  } = req.body;
 
   try {
-    if (!items || items.length === 0) {
+    const itemsToProcess = orderItems || req.body.items;
+    
+    if (!itemsToProcess || itemsToProcess.length === 0) {
       res.status(400);
       return next(new Error('No sale items provided'));
     }
@@ -18,11 +25,19 @@ const createSale = async (req, res, next) => {
     const computedItems = [];
 
     // Calculate details and verify stock
-    for (const item of items) {
-      const dbProduct = await Product.findById(item.productId);
+    for (const item of itemsToProcess) {
+      // Find product by id if provided, else by code or name
+      const dbProduct = await Product.findOne({
+        $or: [
+          { _id: item.productId || item.product },
+          { code: item.code },
+          { name: item.name }
+        ]
+      });
+
       if (!dbProduct) {
         res.status(404);
-        return next(new Error(`Product not found: ${item.productId}`));
+        return next(new Error(`Product not found: ${item.code || item.name || item.productId}`));
       }
 
       if (dbProduct.currentStock < item.quantity) {
@@ -30,21 +45,26 @@ const createSale = async (req, res, next) => {
         return next(new Error(`Insufficient stock for product ${dbProduct.name}. Available: ${dbProduct.currentStock}`));
       }
 
-      const itemPrice = dbProduct.salePrice;
-      const itemTaxRate = dbProduct.taxRate || 0;
+      const itemPrice = item.netUnitPrice || dbProduct.salePrice;
+      const itemTaxRate = item.taxPercent || dbProduct.taxRate || 0;
       
       const itemSubtotal = itemPrice * item.quantity;
-      const itemTaxAmount = (itemSubtotal * itemTaxRate) / 100;
-      const itemGrand = itemSubtotal + itemTaxAmount;
+      const itemDiscount = item.discount || 0;
+      const subtotalAfterDiscount = itemSubtotal - itemDiscount;
+      const itemTaxAmount = (subtotalAfterDiscount * itemTaxRate) / 100;
+      const itemGrand = subtotalAfterDiscount + itemTaxAmount;
 
-      subTotal += itemSubtotal;
+      subTotal += subtotalAfterDiscount;
       taxTotal += itemTaxAmount;
 
       computedItems.push({
         product: dbProduct._id,
+        name: item.name || dbProduct.name,
+        code: item.code || dbProduct.code,
         quantity: item.quantity,
-        price: itemPrice,
-        taxAmount: itemTaxAmount,
+        netUnitPrice: itemPrice,
+        discount: itemDiscount,
+        taxPercent: itemTaxRate,
         total: itemGrand
       });
 
@@ -53,14 +73,29 @@ const createSale = async (req, res, next) => {
       await dbProduct.save();
     }
 
-    const finalGrandTotal = subTotal + taxTotal - (discountTotal || 0);
+    const parsedShipping = Number(shippingCost) || 0;
+    const finalGrandTotal = subTotal + taxTotal - (discountTotal || 0) + parsedShipping;
     const invoiceNo = `INV-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
 
     const newSale = await Sale.create({
       invoiceNo,
-      customerName,
+      saleDate,
+      referenceNo,
+      biller,
+      warehouse,
+      customer: customer || req.body.customerName,
       customerMobile,
-      items: computedItems,
+      currency,
+      exchangeRate,
+      orderItems: computedItems,
+      orderTax,
+      discountType,
+      discountValue,
+      shippingCost,
+      saleStatus,
+      paymentStatus,
+      saleNote,
+      staffNote,
       subTotal,
       discountTotal: discountTotal || 0,
       taxTotal,
@@ -68,7 +103,8 @@ const createSale = async (req, res, next) => {
       paymentMode,
       amountPaid: amountPaid || finalGrandTotal,
       changeReturned: Math.max(0, (amountPaid || finalGrandTotal) - finalGrandTotal),
-      salesPerson: req.user._id
+      salesPerson: req.user?._id,
+      company: req.user?.companyId || req.body.company
     });
 
     res.status(201).json({ success: true, data: newSale });
@@ -84,29 +120,6 @@ const getSales = async (req, res, next) => {
   try {
     const sales = await Sale.find({ company: req.user?.companyId, company: req.user?.companyId }).populate('items.product').populate('salesPerson', 'username email');
     res.json({ success: true, data: sales });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Validate and fetch Coupon
-// @route   GET /api/sales/coupons/validate/:code
-// @access  Private
-const validateCoupon = async (req, res, next) => {
-  const { code } = req.params;
-  try {
-    const coupon = await Coupon.findOne({ code, isActive: true });
-    if (!coupon) {
-      res.status(404);
-      return next(new Error('Coupon not found or inactive'));
-    }
-
-    if (new Date(coupon.expiryDate) < new Date()) {
-      res.status(400);
-      return next(new Error('Coupon has expired'));
-    }
-
-    res.json({ success: true, data: coupon });
   } catch (error) {
     next(error);
   }
@@ -147,92 +160,11 @@ const deleteSale = async (req, res, next) => {
   }
 };
 
-// --- COUPON CRUD OPERATIONS ---
 
-// @desc    Create a new coupon
-// @route   POST /api/sales/coupon
-// @access  Private
-const createCoupon = async (req, res, next) => {
-  try {
-    const coupon = await Coupon.create({ ...req.body, company: req.user?.companyId });
-    res.status(201).json({ success: true, data: coupon });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Get all coupons
-// @route   GET /api/sales/coupon
-// @access  Private
-const getCoupons = async (req, res, next) => {
-  try {
-    const coupons = await Coupon.find({ company: req.user?.companyId });
-    res.json({ success: true, data: coupons });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Get coupon by ID
-// @route   GET /api/sales/coupon/:id
-// @access  Private
-const getCouponById = async (req, res, next) => {
-  try {
-    const coupon = await Coupon.findById(req.params.id);
-    if (!coupon) {
-      res.status(404);
-      return next(new Error('Coupon not found'));
-    }
-    res.json({ success: true, data: coupon });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Update coupon
-// @route   PUT /api/sales/coupon/:id
-// @access  Private
-const updateCoupon = async (req, res, next) => {
-  try {
-    const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
-    if (!coupon) {
-      res.status(404);
-      return next(new Error('Coupon not found'));
-    }
-    res.json({ success: true, data: coupon });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Delete coupon
-// @route   DELETE /api/sales/coupon/:id
-// @access  Private
-const deleteCoupon = async (req, res, next) => {
-  try {
-    const coupon = await Coupon.findByIdAndDelete(req.params.id);
-    if (!coupon) {
-      res.status(404);
-      return next(new Error('Coupon not found'));
-    }
-    res.json({ success: true, message: 'Coupon deleted successfully' });
-  } catch (error) {
-    next(error);
-  }
-};
 
 module.exports = {
   createSale,
   getSales,
   updateSale,
-  deleteSale,
-  validateCoupon,
-  createCoupon,
-  getCoupons,
-  getCouponById,
-  updateCoupon,
-  deleteCoupon
+  deleteSale
 };

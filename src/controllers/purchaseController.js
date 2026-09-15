@@ -1,69 +1,37 @@
-const { Supplier } = require('../models/Supplier');
 const { Purchase } = require('../models/Purchase');
 const { Product } = require('../models/Product');
 
 // Purchase controllers
 const addPurchase = async (req, res, next) => {
-  const { supplierId, items, paymentMode, referenceNo } = req.body;
-
   try {
-    if (!items || items.length === 0) {
+    const { orderItems } = req.body;
+
+    if (!orderItems || orderItems.length === 0) {
       res.status(400);
       return next(new Error('No purchase items provided'));
     }
 
-    const supplier = await Supplier.findById(supplierId);
-    if (!supplier) {
-      res.status(404);
-      return next(new Error('Supplier not found'));
-    }
-
-    let subTotal = 0;
-    let taxTotal = 0;
-    const computedItems = [];
-
     // Process and add inventory
-    for (const item of items) {
-      const dbProduct = await Product.findById(item.productId);
-      if (!dbProduct) {
-        res.status(404);
-        return next(new Error(`Product not found: ${item.productId}`));
+    for (const item of orderItems) {
+      if (item.code) {
+        const dbProduct = await Product.findOne({ code: item.code });
+        if (dbProduct) {
+          // Add Stock
+          dbProduct.currentStock = (dbProduct.currentStock || 0) + Number(item.quantity);
+          await dbProduct.save();
+        }
       }
-
-      const itemPrice = item.price || dbProduct.purchasePrice;
-      const itemTaxRate = dbProduct.taxRate || 0;
-      
-      const itemSubtotal = itemPrice * item.quantity;
-      const itemTaxAmount = (itemSubtotal * itemTaxRate) / 100;
-      const itemGrand = itemSubtotal + itemTaxAmount;
-
-      subTotal += itemSubtotal;
-      taxTotal += itemTaxAmount;
-
-      computedItems.push({
-        product: dbProduct._id,
-        quantity: item.quantity,
-        price: itemPrice,
-        taxAmount: itemTaxAmount,
-        total: itemGrand
-      });
-
-      // Add Stock
-      dbProduct.currentStock += item.quantity;
-      await dbProduct.save();
     }
 
-    const purchaseNo = `PUR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    let purchaseNo = req.body.referenceNo;
+    if (!purchaseNo) {
+      purchaseNo = `PUR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    }
 
     const newPurchase = await Purchase.create({
-      purchaseNo,
-      supplier: supplier._id,
-      items: computedItems,
-      subTotal,
-      taxTotal,
-      grandTotal: subTotal + taxTotal,
-      paymentMode,
-      referenceNo
+      ...req.body,
+      referenceNo: purchaseNo,
+      company: req.user?.companyId || req.body.company
     });
 
     res.status(201).json({ success: true, data: newPurchase });
@@ -74,7 +42,8 @@ const addPurchase = async (req, res, next) => {
 
 const getPurchases = async (req, res, next) => {
   try {
-    const purchases = await Purchase.find({ company: req.user?.companyId, company: req.user?.companyId }).populate('supplier').populate('items.product');
+    const query = req.user?.companyId ? { company: req.user.companyId } : {};
+    const purchases = await Purchase.find(query);
     res.json({ success: true, data: purchases });
   } catch (error) {
     next(error);
@@ -110,9 +79,50 @@ const deletePurchase = async (req, res, next) => {
   }
 };
 
+const importPurchase = async (req, res, next) => {
+  try {
+    // In a real application, if multer is used, req.file would contain the CSV file.
+    // For now, assuming the frontend parses the CSV and sends the items in req.body.orderItems
+    // along with the other purchase details.
+    
+    const { orderItems } = req.body;
+
+    if (!orderItems || orderItems.length === 0) {
+      res.status(400);
+      return next(new Error('No purchase items provided for import'));
+    }
+
+    // Process and add inventory
+    for (const item of orderItems) {
+      if (item.code) {
+        const dbProduct = await Product.findOne({ code: item.code });
+        if (dbProduct) {
+          // Add Stock
+          dbProduct.currentStock = (dbProduct.currentStock || 0) + Number(item.quantity || 1);
+          await dbProduct.save();
+        }
+      }
+    }
+
+    let purchaseNo = `IMP-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+
+    const newPurchase = await Purchase.create({
+      ...req.body,
+      referenceNo: purchaseNo,
+      purchaseDate: new Date().toISOString(),
+      company: req.user?.companyId || req.body.company
+    });
+
+    res.status(201).json({ success: true, data: newPurchase, message: 'Purchase imported successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   addPurchase,
   getPurchases,
   updatePurchase,
-  deletePurchase
+  deletePurchase,
+  importPurchase
 };

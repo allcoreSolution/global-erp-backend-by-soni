@@ -1,81 +1,76 @@
 const { DebitNote } = require('../models/DebitNote');
 
+// @desc    Create a new Debit Note
+// @route   POST /api/debit-notes
+// @access  Private
 const createDebitNote = async (req, res, next) => {
   try {
-    let noteNo = req.body.noteNo;
-    if (!noteNo) {
-      noteNo = `DN-${Date.now().toString().slice(-6)}`;
-    }
-    
-    const note = await DebitNote.create({
+    const newDebitNote = await DebitNote.create({
       ...req.body,
-      noteNo
+      company: req.user?.companyId || req.body.company
     });
-    res.status(201).json({ success: true, data: note });
+
+    res.status(201).json({ success: true, data: newDebitNote });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get all Debit Notes
+// @route   GET /api/debit-notes
+// @access  Private
 const getDebitNotes = async (req, res, next) => {
   try {
-    const notes = await DebitNote.find({ company: req.user?.companyId, company: req.user?.companyId });
-    res.json({ success: true, data: notes });
+    const query = req.user?.companyId ? { company: req.user.companyId } : {};
+    const debitNotes = await DebitNote.find(query);
+    res.json({ success: true, data: debitNotes });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get Debit Note by ID
+// @route   GET /api/debit-notes/:id
+// @access  Private
 const getDebitNoteById = async (req, res, next) => {
   try {
-    const note = await DebitNote.findById(req.params.id);
-    if (!note) {
+    const debitNote = await DebitNote.findById(req.params.id);
+    if (!debitNote) {
       res.status(404);
       return next(new Error('Debit Note not found'));
     }
-    res.json({ success: true, data: note });
+    res.json({ success: true, data: debitNote });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Update Debit Note
+// @route   PUT /api/debit-notes/:id
+// @access  Private
 const updateDebitNote = async (req, res, next) => {
   try {
-    const note = await DebitNote.findByIdAndUpdate(req.params.id, req.body, {
+    const debitNote = await DebitNote.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
     });
-    if (!note) {
+    if (!debitNote) {
       res.status(404);
       return next(new Error('Debit Note not found'));
     }
-    res.json({ success: true, data: note });
+    res.json({ success: true, data: debitNote });
   } catch (error) {
     next(error);
   }
 };
 
-const patchDebitNote = async (req, res, next) => {
-  try {
-    const note = await DebitNote.findByIdAndUpdate(
-      req.params.id, 
-      { $set: req.body }, 
-      { new: true, runValidators: true }
-    );
-    if (!note) {
-      res.status(404);
-      return next(new Error('Debit Note not found'));
-    }
-    res.json({ success: true, data: note });
-  } catch (error) {
-    next(error);
-  }
-};
-
+// @desc    Delete Debit Note
+// @route   DELETE /api/debit-notes/:id
+// @access  Private
 const deleteDebitNote = async (req, res, next) => {
   try {
-    const note = await DebitNote.findByIdAndDelete(req.params.id);
-    if (!note) {
+    const debitNote = await DebitNote.findByIdAndDelete(req.params.id);
+    if (!debitNote) {
       res.status(404);
       return next(new Error('Debit Note not found'));
     }
@@ -90,6 +85,5 @@ module.exports = {
   getDebitNotes,
   getDebitNoteById,
   updateDebitNote,
-  patchDebitNote,
   deleteDebitNote
 };

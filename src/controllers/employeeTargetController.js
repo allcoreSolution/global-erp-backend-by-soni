@@ -1,67 +1,87 @@
-const EmployeeTarget = require('../models/EmployeeTarget');
+const { EmployeeTarget } = require('../models/EmployeeTarget');
 
-const addEmployeeTarget = async (req, res, next) => {
+// @desc    Create a new Employee Target
+// @route   POST /api/employee-targets
+// @access  Private
+const createEmployeeTarget = async (req, res, next) => {
   try {
-    const target = await EmployeeTarget.create(req.body);
-    res.status(201).json({ success: true, data: target });
+    const newEmployeeTarget = await EmployeeTarget.create({
+      ...req.body,
+      company: req.user?.companyId || req.body.company
+    });
+
+    res.status(201).json({ success: true, data: newEmployeeTarget });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get all Employee Targets
+// @route   GET /api/employee-targets
+// @access  Private
 const getEmployeeTargets = async (req, res, next) => {
   try {
-    const targets = await EmployeeTarget.find({ company: req.user?.companyId }).populate('employee', 'username email fullName empId');
-    res.json({ success: true, data: targets });
+    const query = req.user?.companyId ? { company: req.user.companyId } : {};
+    const employeeTargets = await EmployeeTarget.find(query);
+    res.json({ success: true, data: employeeTargets });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get Employee Target by ID
+// @route   GET /api/employee-targets/:id
+// @access  Private
 const getEmployeeTargetById = async (req, res, next) => {
   try {
-    const target = await EmployeeTarget.findById(req.params.id).populate('employee', 'username email fullName empId');
-    if (!target) {
+    const employeeTarget = await EmployeeTarget.findById(req.params.id);
+    if (!employeeTarget) {
       res.status(404);
-      return next(new Error('Employee target not found'));
+      return next(new Error('Employee Target not found'));
     }
-    res.json({ success: true, data: target });
+    res.json({ success: true, data: employeeTarget });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Update Employee Target
+// @route   PUT /api/employee-targets/:id
+// @access  Private
 const updateEmployeeTarget = async (req, res, next) => {
   try {
-    const target = await EmployeeTarget.findByIdAndUpdate(req.params.id, req.body, {
+    const employeeTarget = await EmployeeTarget.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
     });
-    if (!target) {
+    if (!employeeTarget) {
       res.status(404);
-      return next(new Error('Employee target not found'));
+      return next(new Error('Employee Target not found'));
     }
-    res.json({ success: true, data: target });
+    res.json({ success: true, data: employeeTarget });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Delete Employee Target
+// @route   DELETE /api/employee-targets/:id
+// @access  Private
 const deleteEmployeeTarget = async (req, res, next) => {
   try {
-    const target = await EmployeeTarget.findByIdAndDelete(req.params.id);
-    if (!target) {
+    const employeeTarget = await EmployeeTarget.findByIdAndDelete(req.params.id);
+    if (!employeeTarget) {
       res.status(404);
-      return next(new Error('Employee target not found'));
+      return next(new Error('Employee Target not found'));
     }
-    res.json({ success: true, message: 'Employee target deleted successfully' });
+    res.json({ success: true, message: 'Employee Target deleted successfully' });
   } catch (error) {
     next(error);
   }
 };
 
 module.exports = {
-  addEmployeeTarget,
+  createEmployeeTarget,
   getEmployeeTargets,
   getEmployeeTargetById,
   updateEmployeeTarget,

@@ -1,27 +1,48 @@
 const mongoose = require('mongoose');
-const { Supplier } = require('./Supplier');
 
-// Purchase Schema
-const purchaseItemSchema = new mongoose.Schema({
-  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+const orderItemSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  code: { type: String, required: true },
   quantity: { type: Number, required: true, min: 1 },
-  price: { type: Number, required: true },
-  taxAmount: { type: Number, default: 0 },
-  total: { type: Number, required: true }
+  netUnitCost: { type: Number, default: 0 },
+  profitMargin: { type: Number, default: 0 },
+  profitMarginType: { type: String, default: 'Percentage' },
+  productPrice: { type: Number, default: 0 },
+  discount: { type: Number, default: 0 },
+  taxPercent: { type: Number, default: 0 }
 });
 
 const purchaseSchema = new mongoose.Schema({
-  purchaseNo: { type: String, required: true, unique: true },
-  supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', required: true },
-  items: [purchaseItemSchema],
-  subTotal: { type: Number, required: true },
-  taxTotal: { type: Number, default: 0 },
-  grandTotal: { type: Number, required: true },
-  paymentMode: { type: String, enum: ['Cash', 'Bank Transfer', 'UPI', 'Credit'], default: 'Cash' },
-  referenceNo: { type: String, default: '' }, // Invoice from supplier
-  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
+  // Basic Details
+  purchaseDate: { type: String, required: true },
+  referenceNo: { type: String, default: '' },
+  warehouse: { type: String, required: true },
+  supplier: { type: String, default: '' },
+  
+  // Terms & Status
+  paymentTerm: { type: String, default: '30' },
+  dueDate: { type: String, default: '' },
+  purchaseStatus: { type: String, default: 'Received' },
+  paymentStatus: { type: String, default: 'Due' },
+  
+  // Currency & Documents
+  currency: { type: String, default: 'INR' },
+  exchangeRate: { type: String, default: '1' },
+  documentFile: { type: String, default: '' },
+
+  // Items
+  orderItems: [orderItemSchema],
+
+  // Footer Totals
+  orderTax: { type: String, default: 'No Tax' },
+  discountValue: { type: Number, default: 0 },
+  shippingCost: { type: Number, default: 0 },
+  note: { type: String, default: '' },
+
+  // Tenant Isolation
+  company: { type: String, default: '' }
 }, { timestamps: true });
 
 const Purchase = mongoose.model('Purchase', purchaseSchema);
 
-module.exports = { Supplier, Purchase };
+module.exports = { Purchase };

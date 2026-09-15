@@ -2,23 +2,14 @@ const { TaxSlab } = require('../models/TaxSlab');
 
 const createTaxSlab = async (req, res, next) => {
   try {
-    let taxCode = req.body.taxCode;
-    if (!taxCode) {
-      taxCode = `TX-${Date.now().toString().slice(-4)}`;
+    let id = req.body.id;
+    if (!id) {
+      id = `TAX-${Date.now().toString().slice(-4)}`;
     }
-
-    const gstRate = Number(req.body.gstRate || 0);
-    const cgst = req.body.cgst !== undefined ? Number(req.body.cgst) : gstRate / 2;
-    const sgst = req.body.sgst !== undefined ? Number(req.body.sgst) : gstRate / 2;
-    const igst = req.body.igst !== undefined ? Number(req.body.igst) : gstRate;
     
     const taxSlab = await TaxSlab.create({
       ...req.body,
-      taxCode,
-      gstRate,
-      cgst,
-      sgst,
-      igst,
+      id,
       company: req.user?.companyId || req.body.company
     });
     res.status(201).json({ success: true, data: taxSlab });
@@ -52,12 +43,7 @@ const getTaxSlabById = async (req, res, next) => {
 
 const updateTaxSlab = async (req, res, next) => {
   try {
-    if (req.body.gstRate !== undefined) {
-      const gstRate = Number(req.body.gstRate);
-      if (req.body.cgst === undefined) req.body.cgst = gstRate / 2;
-      if (req.body.sgst === undefined) req.body.sgst = gstRate / 2;
-      if (req.body.igst === undefined) req.body.igst = gstRate;
-    }
+
 
     const taxSlab = await TaxSlab.findByIdAndUpdate(req.params.id, req.body, {
       new: true,

@@ -1,30 +1,40 @@
-const Department = require('../models/Department');
+const { Department } = require('../models/Department');
 
-const addDepartment = async (req, res, next) => {
+// @desc    Create a new Department
+// @route   POST /api/departments
+// @access  Private
+const createDepartment = async (req, res, next) => {
   try {
-    const department = await Department.create({ ...req.body, company: req.user?.companyId });
-    res.status(201).json({ success: true, data: department });
+    const newDepartment = await Department.create({
+      ...req.body,
+      company: req.user?.companyId || req.body.company
+    });
+
+    res.status(201).json({ success: true, data: newDepartment });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get all Departments
+// @route   GET /api/departments
+// @access  Private
 const getDepartments = async (req, res, next) => {
   try {
-    const departments = await Department.find({ company: req.user?.companyId })
-      .populate('deptHead', 'fullName empId')
-      .populate('branch', 'branchName code');
+    const query = req.user?.companyId ? { company: req.user.companyId } : {};
+    const departments = await Department.find(query);
     res.json({ success: true, data: departments });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get Department by ID
+// @route   GET /api/departments/:id
+// @access  Private
 const getDepartmentById = async (req, res, next) => {
   try {
-    const department = await Department.findById(req.params.id)
-      .populate('deptHead', 'fullName empId')
-      .populate('branch', 'branchName code');
+    const department = await Department.findById(req.params.id);
     if (!department) {
       res.status(404);
       return next(new Error('Department not found'));
@@ -35,6 +45,9 @@ const getDepartmentById = async (req, res, next) => {
   }
 };
 
+// @desc    Update Department
+// @route   PUT /api/departments/:id
+// @access  Private
 const updateDepartment = async (req, res, next) => {
   try {
     const department = await Department.findByIdAndUpdate(req.params.id, req.body, {
@@ -51,6 +64,9 @@ const updateDepartment = async (req, res, next) => {
   }
 };
 
+// @desc    Delete Department
+// @route   DELETE /api/departments/:id
+// @access  Private
 const deleteDepartment = async (req, res, next) => {
   try {
     const department = await Department.findByIdAndDelete(req.params.id);
@@ -65,7 +81,7 @@ const deleteDepartment = async (req, res, next) => {
 };
 
 module.exports = {
-  addDepartment,
+  createDepartment,
   getDepartments,
   getDepartmentById,
   updateDepartment,

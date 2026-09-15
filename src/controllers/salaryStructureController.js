@@ -1,23 +1,37 @@
-const SalaryStructure = require('../models/SalaryStructure');
+const { SalaryStructure } = require('../models/SalaryStructure');
 
-const addSalaryStructure = async (req, res, next) => {
+// @desc    Create a new Salary Structure
+// @route   POST /api/salary-structures
+// @access  Private
+const createSalaryStructure = async (req, res, next) => {
   try {
-    const salaryStructure = await SalaryStructure.create({ ...req.body, company: req.user?.companyId });
-    res.status(201).json({ success: true, data: salaryStructure });
+    const newSalaryStructure = await SalaryStructure.create({
+      ...req.body,
+      company: req.user?.companyId || req.body.company
+    });
+
+    res.status(201).json({ success: true, data: newSalaryStructure });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get all Salary Structures
+// @route   GET /api/salary-structures
+// @access  Private
 const getSalaryStructures = async (req, res, next) => {
   try {
-    const salaryStructures = await SalaryStructure.find({ company: req.user?.companyId }).sort({ createdAt: -1 });
+    const query = req.user?.companyId ? { company: req.user.companyId } : {};
+    const salaryStructures = await SalaryStructure.find(query);
     res.json({ success: true, data: salaryStructures });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get Salary Structure by ID
+// @route   GET /api/salary-structures/:id
+// @access  Private
 const getSalaryStructureById = async (req, res, next) => {
   try {
     const salaryStructure = await SalaryStructure.findById(req.params.id);
@@ -31,6 +45,9 @@ const getSalaryStructureById = async (req, res, next) => {
   }
 };
 
+// @desc    Update Salary Structure
+// @route   PUT /api/salary-structures/:id
+// @access  Private
 const updateSalaryStructure = async (req, res, next) => {
   try {
     const salaryStructure = await SalaryStructure.findByIdAndUpdate(req.params.id, req.body, {
@@ -47,6 +64,9 @@ const updateSalaryStructure = async (req, res, next) => {
   }
 };
 
+// @desc    Delete Salary Structure
+// @route   DELETE /api/salary-structures/:id
+// @access  Private
 const deleteSalaryStructure = async (req, res, next) => {
   try {
     const salaryStructure = await SalaryStructure.findByIdAndDelete(req.params.id);
@@ -61,7 +81,7 @@ const deleteSalaryStructure = async (req, res, next) => {
 };
 
 module.exports = {
-  addSalaryStructure,
+  createSalaryStructure,
   getSalaryStructures,
   getSalaryStructureById,
   updateSalaryStructure,

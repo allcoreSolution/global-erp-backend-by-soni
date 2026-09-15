@@ -1,16 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const {
-  getHrmsSettings,
-  createHrmsSettings,
-  updateHrmsSettings,
-  deleteHrmsSettings
+const { 
+  getHrmsMasterSettings, 
+  updateHrmsMasterSettings 
 } = require('../controllers/hrmsMasterSettingController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.get('/', protect, checkPermission('manage_hrms'), getHrmsSettings);
-router.post('/', protect, checkPermission('manage_hrms'), createHrmsSettings);
-router.put('/', protect, checkPermission('manage_hrms'), updateHrmsSettings);
-router.delete('/', protect, checkPermission('manage_hrms'), deleteHrmsSettings);
+router.route('/')
+  .get(protect, getHrmsMasterSettings)
+  .put(protect, checkPermission('manage_hrms'), updateHrmsMasterSettings);
 
 module.exports = router;

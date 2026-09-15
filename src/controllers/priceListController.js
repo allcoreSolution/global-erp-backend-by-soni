@@ -2,14 +2,14 @@ const { PriceList } = require('../models/PriceList');
 
 const createPriceList = async (req, res, next) => {
   try {
-    let priceListCode = req.body.priceListCode;
-    if (!priceListCode) {
-      priceListCode = `PL-${Date.now().toString().slice(-4)}`;
+    let id = req.body.id;
+    if (!id) {
+      id = `PL-${Date.now().toString().slice(-4)}`;
     }
     
     const priceList = await PriceList.create({
       ...req.body,
-      priceListCode,
+      id,
       company: req.user?.companyId || req.body.company
     });
     res.status(201).json({ success: true, data: priceList });

@@ -1,23 +1,31 @@
 const mongoose = require('mongoose');
 
 const stockTransferItemSchema = new mongoose.Schema({
-  product: { type: String, required: true }, // Can be ObjectId ref
-  quantity: { type: Number, required: true, min: 0 },
+  product: { type: String, required: true },
+  qty: { type: Number, required: true, default: 0 },
   unit: { type: String, default: 'Nos' },
-  batchNo: { type: String, default: '' },
-  serialNo: { type: String, default: '' }
+  batch: { type: String, default: '' },
+  serial: { type: String, default: '' }
 });
 
 const stockTransferSchema = new mongoose.Schema({
-  transferNo: { type: String, required: true, unique: true, trim: true },
-  date: { type: Date, default: Date.now },
+  // Basic Information
+  transferNo: { type: String, required: true, unique: true },
+  date: { type: String, required: true },
+  company: { type: String, default: '' },
+  status: { type: String, default: 'Pending' },
+  
+  // Location Info
   fromWarehouse: { type: String, required: true },
   toWarehouse: { type: String, required: true },
-  shippingReference: { type: String, default: '' },
-  transferReason: { type: String, required: true },
+
+  // Reference Info
+  reference: { type: String, default: '' },
+  reason: { type: String, default: '' },
   remarks: { type: String, default: '' },
-  items: [stockTransferItemSchema],
-  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
+
+  // Items
+  items: [stockTransferItemSchema]
 }, { timestamps: true });
 
 const StockTransfer = mongoose.model('StockTransfer', stockTransferSchema);

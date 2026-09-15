@@ -2,14 +2,14 @@ const { PriceRule } = require('../models/PriceRule');
 
 const createPriceRule = async (req, res, next) => {
   try {
-    let ruleCode = req.body.ruleCode;
-    if (!ruleCode) {
-      ruleCode = `PR-${Date.now().toString().slice(-4)}`;
+    let id = req.body.id;
+    if (!id) {
+      id = `PR-${Date.now().toString().slice(-5)}`;
     }
     
     const priceRule = await PriceRule.create({
       ...req.body,
-      ruleCode,
+      id,
       company: req.user?.companyId || req.body.company
     });
     res.status(201).json({ success: true, data: priceRule });

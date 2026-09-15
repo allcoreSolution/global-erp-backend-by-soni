@@ -60,8 +60,8 @@ const checkPermission = (permission) => {
 
       const role = req.user.role;
 
-      // SuperAdmin gets all bypass access
-      if (role.name === 'SuperAdmin') {
+      // SuperAdmin and Admin get all bypass access
+      if (role.name === 'SuperAdmin' || role.name === 'Admin') {
         return next();
       }
 

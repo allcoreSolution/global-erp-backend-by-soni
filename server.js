@@ -50,6 +50,10 @@ app.use('/api/users', userRoutes);
 const roleRoutes = require('./src/routes/roleRoutes');
 app.use('/api/roles', roleRoutes);
 
+// Employee Routes
+const employeeRoutes = require('./src/routes/employeeRoutes');
+app.use('/api/employees', employeeRoutes);
+
 // Product Routes
 const productRoutes = require('./src/routes/productRoutes');
 app.use('/api/products', productRoutes);
@@ -58,9 +62,85 @@ app.use('/api/products', productRoutes);
 const saleRoutes = require('./src/routes/saleRoutes');
 app.use('/api/sales', saleRoutes);
 
+// Receipt Routes
+const receiptRoutes = require('./src/routes/receiptRoutes');
+app.use('/api/receipts', receiptRoutes);
+
+// Payment Routes
+const paymentRoutes = require('./src/routes/paymentRoutes');
+app.use('/api/payments', paymentRoutes);
+
+// Bank Receipt Routes
+const bankReceiptRoutes = require('./src/routes/bankReceiptRoutes');
+app.use('/api/bank-receipts', bankReceiptRoutes);
+
+// Bank Payment Routes
+const bankPaymentRoutes = require('./src/routes/bankPaymentRoutes');
+app.use('/api/bank-payments', bankPaymentRoutes);
+
+// Contra Routes
+const contraRoutes = require('./src/routes/contraRoutes');
+app.use('/api/contras', contraRoutes);
+
+// Journal Routes
+const journalRoutes = require('./src/routes/journalRoutes');
+app.use('/api/journals', journalRoutes);
+
+// Stock Entry Routes
+const stockEntryRoutes = require('./src/routes/stockEntryRoutes');
+app.use('/api/stock-entries', stockEntryRoutes);
+
+// Stock Transfer Routes
+const stockTransferRoutes = require('./src/routes/stockTransferRoutes');
+app.use('/api/stock-transfers', stockTransferRoutes);
+
+// Sale Return Routes
+const saleReturnRoutes = require('./src/routes/saleReturnRoutes');
+app.use('/api/sale-returns', saleReturnRoutes);
+
+// Credit Note Routes
+const creditNoteRoutes = require('./src/routes/creditNoteRoutes');
+app.use('/api/credit-notes', creditNoteRoutes);
+
+// Sale Exchange Routes
+const saleExchangeRoutes = require('./src/routes/saleExchangeRoutes');
+app.use('/api/sale-exchanges', saleExchangeRoutes);
+
+// Packing Slip Routes
+const packingSlipRoutes = require('./src/routes/packingSlipRoutes');
+app.use('/api/packing-slips', packingSlipRoutes);
+
+// Challan Routes
+const challanRoutes = require('./src/routes/challanRoutes');
+app.use('/api/challans', challanRoutes);
+
+// Driver Routes
+const driverRoutes = require('./src/routes/driverRoutes');
+app.use('/api/drivers', driverRoutes);
+
+// Gift Card Routes
+const giftCardRoutes = require('./src/routes/giftCardRoutes');
+app.use('/api/gift-cards', giftCardRoutes);
+
+// Coupon Routes
+const couponRoutes = require('./src/routes/couponRoutes');
+app.use('/api/coupons', couponRoutes);
+
+// Courier Routes
+const courierRoutes = require('./src/routes/courierRoutes');
+app.use('/api/couriers', courierRoutes);
+
 // Purchase Routes
 const purchaseRoutes = require('./src/routes/purchaseRoutes');
 app.use('/api/purchases', purchaseRoutes);
+
+// Purchase Return Routes
+const purchaseReturnRoutes = require('./src/routes/purchaseReturnRoutes');
+app.use('/api/purchase-returns', purchaseReturnRoutes);
+
+// Debit Note Routes
+const debitNoteRoutes = require('./src/routes/debitNoteRoutes');
+app.use('/api/debit-notes', debitNoteRoutes);
 
 // Old Account Routes removed
 // const accountRoutes = require('./src/routes/accountRoutes');
@@ -105,6 +185,34 @@ app.use('/api/stock-transfers', stockTransferRoutes);
 // Employee Routes
 const employeeRoutes = require('./src/routes/employeeRoutes');
 app.use('/api/employees', employeeRoutes);
+
+// Salary Structure Routes
+const salaryStructureRoutes = require('./src/routes/salaryStructureRoutes');
+app.use('/api/salary-structures', salaryStructureRoutes);
+
+// Appraisal Routes
+const appraisalRoutes = require('./src/routes/appraisalRoutes');
+app.use('/api/appraisals', appraisalRoutes);
+
+// Employee Target Routes
+const employeeTargetRoutes = require('./src/routes/employeeTargetRoutes');
+app.use('/api/employee-targets', employeeTargetRoutes);
+
+// Department Routes
+const departmentRoutes = require('./src/routes/departmentRoutes');
+app.use('/api/departments', departmentRoutes);
+
+// Designation Routes
+const designationRoutes = require('./src/routes/designationRoutes');
+app.use('/api/designations', designationRoutes);
+
+// Shift Setup Routes
+const shiftSetupRoutes = require('./src/routes/shiftSetupRoutes');
+app.use('/api/shift-setup', shiftSetupRoutes);
+
+// HRMS Master Settings Routes
+const hrmsMasterSettingRoutes = require('./src/routes/hrmsMasterSettingRoutes');
+app.use('/api/hrms-master-settings', hrmsMasterSettingRoutes);
 
 // Expense Claim Routes
 const expenseClaimRoutes = require('./src/routes/expenseClaimRoutes');

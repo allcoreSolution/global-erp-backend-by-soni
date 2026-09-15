@@ -1,20 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const {
-  createDebitNote,
-  getDebitNotes,
-  getDebitNoteById,
-  updateDebitNote,
-  patchDebitNote,
-  deleteDebitNote
+const { 
+  createDebitNote, 
+  getDebitNotes, 
+  getDebitNoteById, 
+  updateDebitNote, 
+  deleteDebitNote 
 } = require('../controllers/debitNoteController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.get('/', protect, getDebitNotes);
-router.get('/:id', protect, getDebitNoteById);
-router.post('/', protect, checkPermission('manage_accounts'), createDebitNote);
-router.put('/:id', protect, checkPermission('manage_accounts'), updateDebitNote);
-router.patch('/:id', protect, checkPermission('manage_accounts'), patchDebitNote);
-router.delete('/:id', protect, checkPermission('manage_accounts'), deleteDebitNote);
+router.route('/')
+  .post(protect, checkPermission('manage_purchases'), createDebitNote)
+  .get(protect, getDebitNotes);
+
+router.route('/:id')
+  .get(protect, getDebitNoteById)
+  .put(protect, checkPermission('manage_purchases'), updateDebitNote)
+  .delete(protect, checkPermission('manage_purchases'), deleteDebitNote);
 
 module.exports = router;

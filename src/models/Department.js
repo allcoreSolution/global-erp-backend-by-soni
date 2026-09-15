@@ -1,14 +1,49 @@
 const mongoose = require('mongoose');
 
 const departmentSchema = new mongoose.Schema({
-  deptCode: { type: String, required: true, unique: true, trim: true },
-  departmentName: { type: String, required: true, trim: true },
-  deptHead: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
-  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
-  budgetAllocation: { type: Number, default: 0 },
-  employeesCount: { type: Number, default: 0 },
+  company: { type: String, default: '' }, // acts as the tenant isolation key
+
+  // Basic Information
+  deptCode: { type: String, required: true, unique: true },
+  deptName: { type: String, required: true },
+  deptType: { type: String, default: 'Internal' },
+  parentDept: { type: String, default: '' },
+  branch: { type: String, default: '' },
+  status: { type: String, default: 'Active' },
+
+  // Department Head
+  deptHead: { type: String, default: '' },
+  assistantManager: { type: String, default: '' },
+  reportingDept: { type: String, default: '' },
+
+  // Contact Details
+  contactPerson: { type: String, default: '' },
+  email: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  location: { type: String, default: '' },
+  floor: { type: String, default: '' },
+
+  // Department Details
   description: { type: String, default: '' },
-  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
+  objective: { type: String, default: '' },
+  responsibilities: { type: String, default: '' },
+  costCenter: { type: String, default: '' },
+  profitCenter: { type: String, default: '' },
+  budget: { type: String, default: '' },
+
+  // Working Configuration
+  workingDays: { type: String, default: 'Mon-Sat' },
+  defaultShift: { type: String, default: '' },
+  attendanceRequired: { type: String, default: 'Yes' },
+  leaveApproval: { type: String, default: 'Manager' },
+  expenseApproval: { type: String, default: 'Manager' },
+
+  // Additional Information
+  displayOrder: { type: String, default: '' },
+  remarks: { type: String, default: '' },
+  internalNotes: { type: String, default: '' }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Department', departmentSchema);
+const Department = mongoose.model('Department', departmentSchema);
+
+module.exports = { Department };

@@ -1,81 +1,76 @@
 const { StockEntry } = require('../models/StockEntry');
 
+// @desc    Create a new Stock Entry
+// @route   POST /api/stock-entries
+// @access  Private
 const createStockEntry = async (req, res, next) => {
   try {
-    let voucherNo = req.body.voucherNo;
-    if (!voucherNo) {
-      voucherNo = `SE-${Date.now().toString().slice(-6)}`;
-    }
-    
-    const entry = await StockEntry.create({
+    const newStockEntry = await StockEntry.create({
       ...req.body,
-      voucherNo
+      company: req.user?.companyId || req.body.company
     });
-    res.status(201).json({ success: true, data: entry });
+
+    res.status(201).json({ success: true, data: newStockEntry });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get all Stock Entries
+// @route   GET /api/stock-entries
+// @access  Private
 const getStockEntries = async (req, res, next) => {
   try {
-    const entries = await StockEntry.find({ company: req.user?.companyId, company: req.user?.companyId });
-    res.json({ success: true, data: entries });
+    const query = req.user?.companyId ? { company: req.user.companyId } : {};
+    const stockEntries = await StockEntry.find(query);
+    res.json({ success: true, data: stockEntries });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get Stock Entry by ID
+// @route   GET /api/stock-entries/:id
+// @access  Private
 const getStockEntryById = async (req, res, next) => {
   try {
-    const entry = await StockEntry.findById(req.params.id);
-    if (!entry) {
+    const stockEntry = await StockEntry.findById(req.params.id);
+    if (!stockEntry) {
       res.status(404);
       return next(new Error('Stock Entry not found'));
     }
-    res.json({ success: true, data: entry });
+    res.json({ success: true, data: stockEntry });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Update Stock Entry
+// @route   PUT /api/stock-entries/:id
+// @access  Private
 const updateStockEntry = async (req, res, next) => {
   try {
-    const entry = await StockEntry.findByIdAndUpdate(req.params.id, req.body, {
+    const stockEntry = await StockEntry.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
     });
-    if (!entry) {
+    if (!stockEntry) {
       res.status(404);
       return next(new Error('Stock Entry not found'));
     }
-    res.json({ success: true, data: entry });
+    res.json({ success: true, data: stockEntry });
   } catch (error) {
     next(error);
   }
 };
 
-const patchStockEntry = async (req, res, next) => {
-  try {
-    const entry = await StockEntry.findByIdAndUpdate(
-      req.params.id, 
-      { $set: req.body }, 
-      { new: true, runValidators: true }
-    );
-    if (!entry) {
-      res.status(404);
-      return next(new Error('Stock Entry not found'));
-    }
-    res.json({ success: true, data: entry });
-  } catch (error) {
-    next(error);
-  }
-};
-
+// @desc    Delete Stock Entry
+// @route   DELETE /api/stock-entries/:id
+// @access  Private
 const deleteStockEntry = async (req, res, next) => {
   try {
-    const entry = await StockEntry.findByIdAndDelete(req.params.id);
-    if (!entry) {
+    const stockEntry = await StockEntry.findByIdAndDelete(req.params.id);
+    if (!stockEntry) {
       res.status(404);
       return next(new Error('Stock Entry not found'));
     }
@@ -90,6 +85,5 @@ module.exports = {
   getStockEntries,
   getStockEntryById,
   updateStockEntry,
-  patchStockEntry,
   deleteStockEntry
 };
