@@ -146,13 +146,7 @@ app.use('/api/debit-notes', debitNoteRoutes);
 // const accountRoutes = require('./src/routes/accountRoutes');
 // app.use('/api/accounts', accountRoutes);
 
-// Debit Note Routes
-const debitNoteRoutes = require('./src/routes/debitNoteRoutes');
-app.use('/api/debit-notes', debitNoteRoutes);
-
-// Credit Note Routes
-const creditNoteRoutes = require('./src/routes/creditNoteRoutes');
-app.use('/api/credit-notes', creditNoteRoutes);
+// Removed duplicates for Debit Note and Credit Note
 
 // Clearance Routes
 const clearanceRoutes = require('./src/routes/clearanceRoutes');
@@ -170,13 +164,7 @@ app.use('/api/contra-entries', contraEntryRoutes);
 const journalVoucherRoutes = require('./src/routes/journalVoucherRoutes');
 app.use('/api/journal-vouchers', journalVoucherRoutes);
 
-// Stock Entry Routes
-const stockEntryRoutes = require('./src/routes/stockEntryRoutes');
-app.use('/api/stock-entries', stockEntryRoutes);
-
-// Stock Transfer Routes
-const stockTransferRoutes = require('./src/routes/stockTransferRoutes');
-app.use('/api/stock-transfers', stockTransferRoutes);
+// Removed duplicates for Stock Entry and Stock Transfer
 
 // Old HRMS Routes Removed
 // const hrmsRoutes = require('./src/routes/hrmsRoutes');
@@ -222,17 +210,7 @@ app.use('/api/expenses', expenseClaimRoutes);
 const performanceRatingRoutes = require('./src/routes/performanceRatingRoutes');
 app.use('/api/performance', performanceRatingRoutes);
 
-// Employee Target Routes
-const employeeTargetRoutes = require('./src/routes/employeeTargetRoutes');
-app.use('/api/targets', employeeTargetRoutes);
-
-// Department Routes
-const departmentRoutes = require('./src/routes/departmentRoutes');
-app.use('/api/departments', departmentRoutes);
-
-// Designation Routes
-const designationRoutes = require('./src/routes/designationRoutes');
-app.use('/api/designations', designationRoutes);
+// Removed duplicates for Targets, Departments and Designations
 
 // Shift Timing Routes
 const shiftTimingRoutes = require('./src/routes/shiftTimingRoutes');
@@ -254,9 +232,7 @@ app.use('/api/holidays', holidayRoutes);
 const attendanceRoutes = require('./src/routes/attendanceRoutes');
 app.use('/api/attendances', attendanceRoutes);
 
-// Salary Structure Routes
-const salaryStructureRoutes = require('./src/routes/salaryStructureRoutes');
-app.use('/api/salary-structures', salaryStructureRoutes);
+// Removed duplicate for Salary Structure
 
 // Payslip Routes
 const payslipRoutes = require('./src/routes/payslipRoutes');
