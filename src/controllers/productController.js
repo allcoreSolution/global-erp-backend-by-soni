@@ -12,6 +12,7 @@ const addProduct = async (req, res, next) => {
     const payload = { ...req.body };
     if (!payload.brand) delete payload.brand;
     if (!payload.category) delete payload.category;
+    payload.sku = payload.productCode; // Fix for legacy sku index
 
     const product = await Product.create({ ...payload, company: req.user?.companyId });
 
@@ -45,6 +46,9 @@ const getProductById = async (req, res, next) => {
 
 const updateProduct = async (req, res, next) => {
   try {
+    if (req.body.productCode) {
+      req.body.sku = req.body.productCode;
+    }
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
@@ -96,9 +100,11 @@ const searchProducts = async (req, res, next) => {
 const addCategory = async (req, res, next) => {
   try {
     const payload = { ...req.body };
-    if (!payload.company && req.user?.companyId) {
-      payload.company = req.user.companyId;
+    if (!payload.company) {
+      if (req.user?.companyId) payload.company = req.user.companyId;
+      else delete payload.company;
     }
+    if (!payload.branch) delete payload.branch;
     const category = await Category.create(payload);
     res.status(201).json({ success: true, data: category });
   } catch (error) {
@@ -117,6 +123,9 @@ const getCategories = async (req, res, next) => {
 
 const updateCategory = async (req, res, next) => {
   try {
+    if (req.body.company === '') delete req.body.company;
+    if (req.body.branch === '') delete req.body.branch;
+    
     const category = await Category.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
@@ -148,9 +157,12 @@ const deleteCategory = async (req, res, next) => {
 const addBrand = async (req, res, next) => {
   try {
     const payload = { ...req.body };
-    if (!payload.company && req.user?.companyId) {
-      payload.company = req.user.companyId;
+    if (!payload.company) {
+      if (req.user?.companyId) payload.company = req.user.companyId;
+      else delete payload.company;
     }
+    if (!payload.branch) delete payload.branch;
+    
     const brand = await Brand.create(payload);
     res.status(201).json({ success: true, data: brand });
   } catch (error) {
@@ -169,6 +181,9 @@ const getBrands = async (req, res, next) => {
 
 const updateBrand = async (req, res, next) => {
   try {
+    if (req.body.company === '') delete req.body.company;
+    if (req.body.branch === '') delete req.body.branch;
+    
     const brand = await Brand.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
@@ -200,8 +215,9 @@ const deleteBrand = async (req, res, next) => {
 const addUnit = async (req, res, next) => {
   try {
     const payload = { ...req.body };
-    if (!payload.company && req.user?.companyId) {
-      payload.company = req.user.companyId;
+    if (!payload.company) {
+      if (req.user?.companyId) payload.company = req.user.companyId;
+      else delete payload.company;
     }
     const unit = await Unit.create(payload);
     res.status(201).json({ success: true, data: unit });
@@ -221,6 +237,8 @@ const getUnits = async (req, res, next) => {
 
 const updateUnit = async (req, res, next) => {
   try {
+    if (req.body.company === '') delete req.body.company;
+
     const unit = await Unit.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
@@ -252,8 +270,9 @@ const deleteUnit = async (req, res, next) => {
 const addAdjustment = async (req, res, next) => {
   try {
     const payload = { ...req.body };
-    if (!payload.company && req.user?.companyId) {
-      payload.company = req.user.companyId;
+    if (!payload.company) {
+      if (req.user?.companyId) payload.company = req.user.companyId;
+      else delete payload.company;
     }
     const adjustment = await Adjustment.create(payload);
     res.status(201).json({ success: true, data: adjustment });

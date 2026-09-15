@@ -74,6 +74,7 @@ const productSchema = new mongoose.Schema({
   productType: { type: String, default: 'Standard' },
   productName: { type: String, required: true, trim: true },
   productCode: { type: String, required: true, unique: true, trim: true },
+  sku: { type: String, sparse: true },
   barcodeSymbology: { type: String, default: 'Code 128' },
   brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand' },
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
