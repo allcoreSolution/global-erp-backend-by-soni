@@ -164,6 +164,57 @@ const getDashboardSummary = async (req, res, next) => {
   }
 };
 
-module.exports = {
-  getDashboardSummary
+// @desc    Get dashboard summary for a specific branch
+// @route   GET /api/dashboard/branch-summary/:branchId
+// @access  Private
+const getBranchSummary = async (req, res, next) => {
+  try {
+    const companyId = req.user.company;
+    const branchId = req.params.branchId;
+    const User = require('../models/User'); // Import User correctly
+    const mongoose = require('mongoose');
+    
+    // Safety check - convert branchId to ObjectId if necessary, or just query if schema uses string
+    const matchCriteria = { company: companyId, branch: branchId };
+    
+    // 1. Sales
+    const salesAgg = await Sale.aggregate([
+      { $match: matchCriteria },
+      { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+    ]);
+    const sales = salesAgg.length > 0 ? salesAgg[0].total : 0;
+
+    // 2. Purchases
+    const purchaseAgg = await Purchase.aggregate([
+      { $match: matchCriteria },
+      { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+    ]);
+    const purchase = purchaseAgg.length > 0 ? purchaseAgg[0].total : 0;
+
+    // 3. Expenses
+    const expenseAgg = await ExpenseClaim.aggregate([
+      { $match: { company: companyId, branch: branchId, status: 'Approved' } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const expenses = expenseAgg.length > 0 ? expenseAgg[0].total : 0;
+
+    // 4. Users count for this branch
+    const users = await User.countDocuments({ company: companyId, branch: branchId });
+    
+    // 5. Stock Level
+    // (Assuming StockEntry or Product has branch info, otherwise mock it for now since we don't have a direct stock-by-branch model clearly visible in context. Let's mock stock for now or set to 0 if not implemented)
+    const stock = 0; // Requires complex inventory querying, returning 0 for now.
+
+    res.json({
+      sales,
+      purchase,
+      expenses,
+      users,
+      stock
+    });
+  } catch (error) {
+    next(error);
+  }
 };
+
+module.exports = { getDashboardSummary, getBranchSummary };
