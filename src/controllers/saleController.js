@@ -104,7 +104,7 @@ const createSale = async (req, res, next) => {
       amountPaid: amountPaid || finalGrandTotal,
       changeReturned: Math.max(0, (amountPaid || finalGrandTotal) - finalGrandTotal),
       salesPerson: req.user?._id,
-      company: req.user?.companyId || req.body.company
+      company: req.user?.company || req.body.company
     });
 
     res.status(201).json({ success: true, data: newSale });
@@ -118,7 +118,7 @@ const createSale = async (req, res, next) => {
 // @access  Private
 const getSales = async (req, res, next) => {
   try {
-    const sales = await Sale.find({ company: req.user?.companyId, company: req.user?.companyId }).populate('items.product').populate('salesPerson', 'username email');
+    const sales = await Sale.find({ company: req.user?.company }).populate('salesPerson', 'username email');
     res.json({ success: true, data: sales });
   } catch (error) {
     next(error);
@@ -130,10 +130,11 @@ const getSales = async (req, res, next) => {
 // @access  Private
 const updateSale = async (req, res, next) => {
   try {
-    const sale = await Sale.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
+    const sale = await Sale.findOneAndUpdate(
+      { _id: req.params.id, company: req.user.company }, 
+      req.body, 
+      { new: true, runValidators: true }
+    );
     if (!sale) {
       res.status(404);
       return next(new Error('Sale not found'));
@@ -149,7 +150,7 @@ const updateSale = async (req, res, next) => {
 // @access  Private
 const deleteSale = async (req, res, next) => {
   try {
-    const sale = await Sale.findByIdAndDelete(req.params.id);
+    const sale = await Sale.findOneAndDelete({ _id: req.params.id, company: req.user.company });
     if (!sale) {
       res.status(404);
       return next(new Error('Sale not found'));
