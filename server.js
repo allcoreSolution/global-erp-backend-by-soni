@@ -276,6 +276,10 @@ app.use('/api/units', unitRoutes);
 const stockCountRoutes = require('./src/routes/stockCountRoutes');
 app.use('/api/stock-counts', stockCountRoutes);
 
+// Catalog Routes
+const catalogRoutes = require('./src/routes/catalogRoutes');
+app.use('/api/catalogs', catalogRoutes);
+
 // Stock Report Routes
 const stockReportRoutes = require('./src/routes/stockReportRoutes');
 app.use('/api/reports/stock', stockReportRoutes);
