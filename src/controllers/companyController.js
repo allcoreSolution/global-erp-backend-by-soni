@@ -160,7 +160,7 @@ const getMyCompanyProfile = async (req, res, next) => {
 // @access  Private (Admins only)
 const updateCompanyProfile = async (req, res, next) => {
   try {
-    const { name, phone, address, gstNumber, logoUrl, themeColor } = req.body;
+    const { name, code, email, phone, website, address, gstNumber, logoUrl, themeColor } = req.body;
     
     const company = await Company.findById(req.user.company);
     if (!company) {
@@ -169,9 +169,12 @@ const updateCompanyProfile = async (req, res, next) => {
     }
 
     if (name) company.name = name;
-    if (phone) company.phone = phone;
-    if (address) company.address = address;
-    if (gstNumber) company.gstNumber = gstNumber;
+    if (code !== undefined) company.code = code;
+    if (email !== undefined) company.email = email;
+    if (phone !== undefined) company.phone = phone;
+    if (website !== undefined) company.website = website;
+    if (address !== undefined) company.address = address;
+    if (gstNumber !== undefined) company.gstNumber = gstNumber;
     if (logoUrl !== undefined) company.logoUrl = logoUrl;
     if (themeColor !== undefined) company.themeColor = themeColor;
 
