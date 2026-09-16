@@ -24,7 +24,10 @@ const addProduct = async (req, res, next) => {
 
 const getProducts = async (req, res, next) => {
   try {
-    const products = await Product.find({ company: req.user?.companyId, isActive: true }).populate('brand').populate('category');
+    const query = req.user?.companyId 
+      ? { $or: [{ company: req.user.companyId }, { company: null }, { company: { $exists: false } }], isActive: true } 
+      : { isActive: true };
+    const products = await Product.find(query).populate('brand').populate('category');
     res.json({ success: true, data: products });
   } catch (error) {
     next(error);
