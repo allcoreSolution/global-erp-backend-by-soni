@@ -52,6 +52,10 @@ app.use('/api/users', userRoutes);
 const roleRoutes = require('./src/routes/roleRoutes');
 app.use('/api/roles', roleRoutes);
 
+// Bank Routes
+const bankRoutes = require('./src/routes/bankRoutes');
+app.use('/api/banks', bankRoutes);
+
 // Upload Routes
 const uploadRoutes = require('./src/routes/uploadRoutes');
 app.use('/api/upload', uploadRoutes);
@@ -63,6 +67,10 @@ app.use('/api/employees', employeeRoutes);
 // Product Routes
 const productRoutes = require('./src/routes/productRoutes');
 app.use('/api/products', productRoutes);
+
+// Price Mapping Routes
+const priceMappingRoutes = require('./src/routes/priceMappingRoutes');
+app.use('/api/price-mappings', priceMappingRoutes);
 
 // Sales Routes
 const saleRoutes = require('./src/routes/saleRoutes');

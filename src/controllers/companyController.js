@@ -160,7 +160,10 @@ const getMyCompanyProfile = async (req, res, next) => {
 // @access  Private (Admins only)
 const updateCompanyProfile = async (req, res, next) => {
   try {
-    const { name, code, email, phone, website, address, gstNumber, logoUrl, themeColor } = req.body;
+    const { 
+      name, code, email, phone, website, address, gstNumber, pan, cin, tan, logoUrl, themeColor,
+      financialYear, currency, dateFormat, invoicePrefix, terms, signature
+    } = req.body;
     
     const company = await Company.findById(req.user.company);
     if (!company) {
@@ -175,8 +178,18 @@ const updateCompanyProfile = async (req, res, next) => {
     if (website !== undefined) company.website = website;
     if (address !== undefined) company.address = address;
     if (gstNumber !== undefined) company.gstNumber = gstNumber;
+    if (pan !== undefined) company.pan = pan;
+    if (cin !== undefined) company.cin = cin;
+    if (tan !== undefined) company.tan = tan;
     if (logoUrl !== undefined) company.logoUrl = logoUrl;
     if (themeColor !== undefined) company.themeColor = themeColor;
+    
+    if (financialYear !== undefined) company.financialYear = financialYear;
+    if (currency !== undefined) company.currency = currency;
+    if (dateFormat !== undefined) company.dateFormat = dateFormat;
+    if (invoicePrefix !== undefined) company.invoicePrefix = invoicePrefix;
+    if (terms !== undefined) company.terms = terms;
+    if (signature !== undefined) company.signature = signature;
 
     const updatedCompany = await company.save();
     res.json(updatedCompany);
