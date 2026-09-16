@@ -29,7 +29,11 @@ const branchSchema = new mongoose.Schema({
   costCenter: { type: String, default: '' },
   profitCenter: { type: String, default: '' },
   ledger: { type: String, default: '' },
-  company: { type: String, default: '' }
+  company: { type: String, default: '' },
+  documentUrl: { type: String, default: '' },
+  depts: { type: String, default: '' },
+  bank: { type: String, default: '' },
+  financialSetting: { type: String, default: '' }
 }, { timestamps: true });
 
 const Branch = mongoose.model('Branch', branchSchema);

@@ -10,7 +10,7 @@ const createBranch = async (req, res, next) => {
     const branch = await Branch.create({
       ...req.body,
       id,
-      company: req.user?.companyId || req.body.company
+      company: req.user?.company || req.body.company
     });
     res.status(201).json({ success: true, data: branch });
   } catch (error) {
@@ -20,7 +20,7 @@ const createBranch = async (req, res, next) => {
 
 const getBranches = async (req, res, next) => {
   try {
-    const query = req.user?.companyId ? { company: req.user.companyId } : {};
+    const query = req.user?.company ? { company: req.user.company } : {};
     const branches = await Branch.find(query);
     res.json({ success: true, data: branches });
   } catch (error) {
