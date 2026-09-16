@@ -2,10 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const { Product } = require('./src/models/Product');
 
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(async () => {
+mongoose.connect(process.env.MONGO_URI).then(async () => {
   console.log("Connected to DB...");
   
   const mockProduct = {

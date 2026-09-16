@@ -27,13 +27,13 @@ const createSale = async (req, res, next) => {
     // Calculate details and verify stock
     for (const item of itemsToProcess) {
       // Find product by id if provided, else by code or name
-      const dbProduct = await Product.findOne({
-        $or: [
-          { _id: item.productId || item.product },
-          { code: item.code },
-          { name: item.name }
-        ]
-      });
+      // Find product by id if provided, else by code or name
+      let prodQuery = { $or: [] };
+      if (item.productId || item.product) prodQuery.$or.push({ _id: item.productId || item.product });
+      if (item.code) prodQuery.$or.push({ productCode: item.code });
+      if (item.name) prodQuery.$or.push({ productName: item.name });
+
+      const dbProduct = await Product.findOne(prodQuery.$or.length ? prodQuery : { _id: null });
 
       if (!dbProduct) {
         res.status(404);
@@ -42,10 +42,10 @@ const createSale = async (req, res, next) => {
 
       if (dbProduct.currentStock < item.quantity) {
         res.status(400);
-        return next(new Error(`Insufficient stock for product ${dbProduct.name}. Available: ${dbProduct.currentStock}`));
+        return next(new Error(`Insufficient stock for product ${dbProduct.productName}. Available: ${dbProduct.currentStock}`));
       }
 
-      const itemPrice = item.netUnitPrice || dbProduct.salePrice;
+      const itemPrice = item.netUnitPrice || dbProduct.productPrice || dbProduct.salePrice || 0;
       const itemTaxRate = item.taxPercent || dbProduct.taxRate || 0;
       
       const itemSubtotal = itemPrice * item.quantity;
