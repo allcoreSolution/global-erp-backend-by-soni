@@ -1,0 +1,38 @@
+const DiscountType = require('../models/DiscountType');
+
+exports.getAllDiscountTypes = async (req, res) => {
+  try {
+    const data = await DiscountType.find();
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.createDiscountType = async (req, res) => {
+  try {
+    const newData = new DiscountType(req.body);
+    const savedData = await newData.save();
+    res.status(201).json(savedData);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.updateDiscountType = async (req, res) => {
+  try {
+    const updatedData = await DiscountType.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.status(200).json(updatedData);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.deleteDiscountType = async (req, res) => {
+  try {
+    await DiscountType.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'DiscountType deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
