@@ -139,6 +139,14 @@ app.use('/api/purchases', purchaseRoutes);
 const purchaseReturnRoutes = require('./src/routes/purchaseReturnRoutes');
 app.use('/api/purchase-returns', purchaseReturnRoutes);
 
+// Master Options Route - Removed
+
+// New Individual Config Routes
+app.use('/api/supplier-types', require('./src/routes/supplierTypeRoutes'));
+app.use('/api/supplier-categories', require('./src/routes/supplierCategoryRoutes'));
+app.use('/api/tax-preferences', require('./src/routes/taxPreferenceRoutes'));
+app.use('/api/payment-terms', require('./src/routes/paymentTermRoutes'));
+
 // Debit Note Routes
 const debitNoteRoutes = require('./src/routes/debitNoteRoutes');
 app.use('/api/debit-notes', debitNoteRoutes);

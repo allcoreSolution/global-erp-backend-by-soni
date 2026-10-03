@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const branchSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true, trim: true },
+  id: { type: String, required: true, trim: true },
   code: { type: String, default: '' },
   name: { type: String, required: true, trim: true },
   manager: { type: String, default: '' },
@@ -21,9 +21,13 @@ const branchSchema = new mongoose.Schema({
   pan: { type: String, default: '' },
   tan: { type: String, default: '' },
 
-  company: { type: String, default: '' },
+  // ✅ Fixed: Proper ObjectId reference to Company
+  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
   documentUrl: { type: String, default: '' }
 }, { timestamps: true });
+
+// Compound index to ensure branch IDs are unique only PER COMPANY
+branchSchema.index({ company: 1, id: 1 }, { unique: true });
 
 const Branch = mongoose.model('Branch', branchSchema);
 

@@ -6,6 +6,7 @@ const contraSchema = new mongoose.Schema({
   contraDate: { type: String, required: true },
   company: { type: String, default: '' },
   branch: { type: String, default: '' },
+  warehouse: { type: String, default: '' },
   voucherType: { type: String, default: 'Contra' },
   status: { type: String, default: 'Draft' },
   

@@ -8,7 +8,7 @@ const saleItemSchema = new mongoose.Schema({
   discount: { type: Number, default: 0 },
   taxPercent: { type: Number, default: 0 },
   total: { type: Number, default: 0 },
-  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' } // Optional ref
+  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
 });
 
 const saleSchema = new mongoose.Schema({
@@ -16,8 +16,13 @@ const saleSchema = new mongoose.Schema({
   saleDate: { type: String, default: '' },
   referenceNo: { type: String, default: '' },
   biller: { type: String, default: '' },
-  warehouse: { type: String, default: '' },
-  customer: { type: String, default: 'Walk-in Customer' },
+
+  // ✅ Fixed: Proper ObjectId references (Hierarchy: Company → Branch → Warehouse)
+  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', default: null },
+  warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse', default: null },
+  customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', default: null },
+
   customerMobile: { type: String, default: '' },
   currency: { type: String, default: 'INR' },
   exchangeRate: { type: String, default: '1' },
@@ -38,7 +43,6 @@ const saleSchema = new mongoose.Schema({
   amountPaid: { type: Number, default: 0 },
   changeReturned: { type: Number, default: 0 },
   salesPerson: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  company: { type: String, default: '' }
 }, { timestamps: true });
 
 const Sale = mongoose.model('Sale', saleSchema);

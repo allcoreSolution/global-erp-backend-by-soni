@@ -9,22 +9,28 @@ const orderItemSchema = new mongoose.Schema({
   profitMarginType: { type: String, default: 'Percentage' },
   productPrice: { type: Number, default: 0 },
   discount: { type: Number, default: 0 },
-  taxPercent: { type: Number, default: 0 }
+  taxPercent: { type: Number, default: 0 },
+  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
 });
 
 const purchaseSchema = new mongoose.Schema({
   // Basic Details
   purchaseDate: { type: String, required: true },
   referenceNo: { type: String, default: '' },
-  warehouse: { type: String, required: true },
-  supplier: { type: String, default: '' },
-  
+  purchaseNo: { type: String, unique: true, sparse: true },
+
+  // ✅ Fixed: Proper ObjectId references (Hierarchy: Company → Branch → Warehouse)
+  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', default: null },
+  warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse', default: null },
+  supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', default: null },
+
   // Terms & Status
   paymentTerm: { type: String, default: '30' },
   dueDate: { type: String, default: '' },
   purchaseStatus: { type: String, default: 'Received' },
   paymentStatus: { type: String, default: 'Due' },
-  
+
   // Currency & Documents
   currency: { type: String, default: 'INR' },
   exchangeRate: { type: String, default: '1' },
@@ -37,10 +43,9 @@ const purchaseSchema = new mongoose.Schema({
   orderTax: { type: String, default: 'No Tax' },
   discountValue: { type: Number, default: 0 },
   shippingCost: { type: Number, default: 0 },
+  grandTotal: { type: Number, default: 0 },
   note: { type: String, default: '' },
 
-  // Tenant Isolation
-  company: { type: String, default: '' }
 }, { timestamps: true });
 
 const Purchase = mongoose.model('Purchase', purchaseSchema);

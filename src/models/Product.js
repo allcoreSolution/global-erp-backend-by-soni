@@ -100,6 +100,10 @@ const productSchema = new mongoose.Schema({
   initialStockQty: { type: String, default: '' },
   initialStockWarehouse: { type: String, default: '' },
   currentStock: { type: Number, default: 0 },
+  warehouseStocks: [{ 
+    warehouse: { type: String },
+    stock: { type: Number, default: 0 }
+  }],
   isActive: { type: Boolean, default: true },
   
   // Media & Description

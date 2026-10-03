@@ -40,9 +40,13 @@ const createSale = async (req, res, next) => {
         return next(new Error(`Product not found: ${item.code || item.name || item.productId}`));
       }
 
-      if (dbProduct.currentStock < item.quantity) {
+      // Check warehouse specific stock
+      const targetWarehouseName = req.body.warehouse;
+      const whStock = dbProduct.warehouseStocks?.find(w => w.warehouse === targetWarehouseName) || { stock: 0 };
+
+      if (whStock.stock < item.quantity) {
         res.status(400);
-        return next(new Error(`Insufficient stock for product ${dbProduct.productName}. Available: ${dbProduct.currentStock}`));
+        return next(new Error(`Insufficient stock for product ${dbProduct.productName} in warehouse ${targetWarehouseName}. Available: ${whStock.stock}`));
       }
 
       const itemPrice = item.netUnitPrice || dbProduct.productPrice || dbProduct.salePrice || 0;
@@ -70,6 +74,17 @@ const createSale = async (req, res, next) => {
 
       // Deduct Stock
       dbProduct.currentStock -= item.quantity;
+      if (dbProduct.warehouseStocks && dbProduct.warehouseStocks.length > 0) {
+        const whIndex = dbProduct.warehouseStocks.findIndex(w => w.warehouse === targetWarehouseName);
+        if (whIndex >= 0) {
+          dbProduct.warehouseStocks[whIndex].stock -= item.quantity;
+        } else {
+          dbProduct.warehouseStocks.push({ warehouse: targetWarehouseName, stock: -item.quantity });
+        }
+      } else {
+        dbProduct.warehouseStocks = [{ warehouse: targetWarehouseName, stock: -item.quantity }];
+      }
+      
       await dbProduct.save();
     }
 
@@ -150,12 +165,32 @@ const updateSale = async (req, res, next) => {
 // @access  Private
 const deleteSale = async (req, res, next) => {
   try {
-    const sale = await Sale.findOneAndDelete({ _id: req.params.id, company: req.user.company });
+    const sale = await Sale.findOne({ _id: req.params.id, company: req.user.company });
     if (!sale) {
       res.status(404);
       return next(new Error('Sale not found'));
     }
-    res.json({ success: true, message: 'Sale deleted successfully' });
+
+    // Return stock for each item
+    for (const item of sale.orderItems) {
+      const dbProduct = await Product.findById(item.product);
+      if (dbProduct) {
+        dbProduct.currentStock = (Number(dbProduct.currentStock) || 0) + item.quantity;
+        if (sale.warehouse) {
+          const whIndex = dbProduct.warehouseStocks.findIndex(w => w.warehouse === sale.warehouse);
+          if (whIndex >= 0) {
+            dbProduct.warehouseStocks[whIndex].stock = (Number(dbProduct.warehouseStocks[whIndex].stock) || 0) + item.quantity;
+          } else {
+            dbProduct.warehouseStocks.push({ warehouse: sale.warehouse, stock: item.quantity });
+          }
+        }
+        await dbProduct.save();
+      }
+    }
+
+    await Sale.findByIdAndDelete(sale._id);
+
+    res.json({ success: true, message: 'Sale deleted successfully and stock returned' });
   } catch (error) {
     next(error);
   }

@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const invoiceAdjustmentSchema = new mongoose.Schema({
-  invoiceNo: { type: String, required: true },
+  referenceNo: { type: String },
+  invoiceNo: { type: String, default: '' },
   invoiceAmount: { type: Number, default: 0 },
   dueAmount: { type: Number, default: 0 },
   adjustAmount: { type: Number, default: 0 }
@@ -15,6 +16,7 @@ const receiptSchema = new mongoose.Schema({
   receiptType: { type: String, default: 'Customer' },
   company: { type: String, default: '' },
   branch: { type: String, default: '' },
+  warehouse: { type: String, default: '' },
   status: { type: String, default: 'Draft' },
 
   // Party Details

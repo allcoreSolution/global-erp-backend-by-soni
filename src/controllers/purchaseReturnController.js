@@ -1,4 +1,5 @@
 const { PurchaseReturn } = require('../models/PurchaseReturn');
+const { Product } = require('../models/Product');
 
 // @desc    Create a new Purchase Return
 // @route   POST /api/purchase-returns
@@ -9,6 +10,32 @@ const createPurchaseReturn = async (req, res, next) => {
       ...req.body,
       company: req.user?.companyId || req.body.company
     });
+
+    // Auto-deduct stock for each returned item
+    const warehouse = newPurchaseReturn.warehouse || newPurchaseReturn.returnWarehouse;
+    if (newPurchaseReturn.items && newPurchaseReturn.items.length > 0) {
+      for (const item of newPurchaseReturn.items) {
+        if (!item.product) continue;
+        
+        const dbProduct = await Product.findById(item.product);
+        if (dbProduct) {
+          // Deduct global stock
+          const qty = Number(item.returnQty) || 0;
+          dbProduct.currentStock = (Number(dbProduct.currentStock) || 0) - qty;
+
+          // Deduct warehouse specific stock
+          if (warehouse) {
+            const whIndex = dbProduct.warehouseStocks.findIndex(ws => ws.warehouse === warehouse);
+            if (whIndex > -1) {
+              dbProduct.warehouseStocks[whIndex].stock = (Number(dbProduct.warehouseStocks[whIndex].stock) || 0) - qty;
+            } else {
+              dbProduct.warehouseStocks.push({ warehouse: warehouse, stock: -qty });
+            }
+          }
+          await dbProduct.save();
+        }
+      }
+    }
 
     res.status(201).json({ success: true, data: newPurchaseReturn });
   } catch (error) {
@@ -22,7 +49,10 @@ const createPurchaseReturn = async (req, res, next) => {
 const getPurchaseReturns = async (req, res, next) => {
   try {
     const query = req.user?.companyId ? { company: req.user.companyId } : {};
-    const purchaseReturns = await PurchaseReturn.find(query);
+    const purchaseReturns = await PurchaseReturn.find(query)
+      .populate('supplier', 'supplierName companyName name')
+      .populate('warehouse', 'name warehouseName')
+      .sort({ createdAt: -1 });
     res.json({ success: true, data: purchaseReturns });
   } catch (error) {
     next(error);

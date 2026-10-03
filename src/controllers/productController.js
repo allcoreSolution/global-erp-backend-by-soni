@@ -4,10 +4,37 @@ const { Product, Category, Brand, Unit, Adjustment, StockCount } = require('../m
 const addProduct = async (req, res, next) => {
   try {
     const payload = { ...req.body };
-    if (!payload.company) {
-      if (req.user?.companyId) payload.company = req.user.companyId;
-      else delete payload.company;
+    const companyId = req.user?.companyId || payload.company;
+    
+    if (companyId) {
+      payload.company = companyId;
     }
+
+    // Auto-resolve Brand
+    if (payload.brand && !require('mongoose').Types.ObjectId.isValid(payload.brand)) {
+      let b = await Brand.findOne({ name: payload.brand, company: companyId });
+      if (!b) b = await Brand.findOne({ name: payload.brand });
+      if (!b) b = await Brand.create({ name: payload.brand, company: companyId });
+      payload.brand = b._id;
+    } else if (!payload.brand) {
+      delete payload.brand; // prevent invalid cast
+    }
+
+    // Auto-resolve Category
+    if (payload.category && !require('mongoose').Types.ObjectId.isValid(payload.category)) {
+      let c = await Category.findOne({ name: payload.category, company: companyId });
+      if (!c) c = await Category.findOne({ name: payload.category });
+      if (!c) c = await Category.create({ name: payload.category, company: companyId });
+      payload.category = c._id;
+    } else if (!payload.category) {
+      delete payload.category; // prevent invalid cast
+    }
+
+    // Generate unique SKU if missing (required by DB index)
+    if (!payload.sku && payload.productCode) {
+      payload.sku = payload.productCode;
+    }
+
     const product = await Product.create(payload);
     res.status(201).json({ success: true, data: product });
   } catch (error) {
@@ -232,6 +259,39 @@ const addAdjustment = async (req, res, next) => {
       else delete payload.company;
     }
     const adjustment = await Adjustment.create(payload);
+
+    // --- AUTOMATIC STOCK SYNC LOGIC ---
+    if (payload.items && payload.items.length > 0) {
+      for (const item of payload.items) {
+        let product = await Product.findOne({ 
+          productCode: item.code, 
+          company: payload.company 
+        });
+
+        if (product) {
+          const qtyDiff = Number(item.quantity) || 0;
+          
+          // 1. Update overall stock
+          product.currentStock = (product.currentStock || 0) + qtyDiff;
+
+          // 2. Update warehouse specific stock
+          if (payload.warehouse) {
+            if (!product.warehouseStocks) product.warehouseStocks = [];
+            const whIndex = product.warehouseStocks.findIndex(ws => ws.warehouse === payload.warehouse);
+            
+            if (whIndex !== -1) {
+              product.warehouseStocks[whIndex].stock = (product.warehouseStocks[whIndex].stock || 0) + qtyDiff;
+            } else {
+              product.warehouseStocks.push({ warehouse: payload.warehouse, stock: qtyDiff });
+            }
+          }
+          
+          await product.save();
+        }
+      }
+    }
+    // ----------------------------------
+
     res.status(201).json({ success: true, data: adjustment });
   } catch (error) {
     next(error);
@@ -240,7 +300,7 @@ const addAdjustment = async (req, res, next) => {
 
 const getAdjustments = async (req, res, next) => {
   try {
-    const adjustments = await Adjustment.find({ company: req.user?.companyId });
+    const adjustments = await Adjustment.find({ company: req.user?.companyId }).sort({ createdAt: -1 });
     res.json({ success: true, data: adjustments });
   } catch (error) {
     next(error);
@@ -266,7 +326,7 @@ const addStockCount = async (req, res, next) => {
 
 const getStockCounts = async (req, res, next) => {
   try {
-    const stockCounts = await StockCount.find({ company: req.user?.companyId });
+    const stockCounts = await StockCount.find({ company: req.user?.companyId }).sort({ createdAt: -1 });
     res.json({ success: true, data: stockCounts });
   } catch (error) {
     next(error);

@@ -29,7 +29,6 @@ const customerSchema = new mongoose.Schema({
   status: { type: Boolean, default: true },
   phone: { type: String, default: '' },
   email: { type: String, default: '' },
-  gstin: { type: String, default: '' },
   pan: { type: String, default: '' },
   
   billingAddress: { type: addressSchema, default: () => ({}) },
@@ -39,21 +38,13 @@ const customerSchema = new mongoose.Schema({
   panCard: { type: String, default: '' },
   shopLicense: { type: String, default: '' },
   otherDocuments: { type: String, default: '' },
-  
-  salesRep: { type: String, default: '' },
-  paymentTerms: { type: String, default: 'Due on Receipt' },
   creditLimit: { type: Number, default: 0 },
   creditPeriod: { type: Number, default: 0 },
   openingBalance: { type: Number, default: 0 },
   balanceType: { type: String, enum: ['Dr', 'Cr', 'Dr (Receivable)', 'Cr (Payable)'], default: 'Dr' },
   priceList: { type: String, default: '' },
   discount: { type: Number, default: 0 },
-  taxType: { type: String, default: '' },
-  
-  territory: { type: String, default: '' },
-  warehouseName: { type: String, default: '' },
   warehouseAddress: { type: String, default: '' },
-  warehouseCapacity: { type: String, default: '' },
   stockLocation: { type: String, default: '' },
   
   assignedRegion: { type: String, default: '' },
@@ -61,7 +52,6 @@ const customerSchema = new mongoose.Schema({
   logisticsWarehouse: { type: String, default: '' },
   deliveryVehicle: { type: String, default: '' },
   deliveryPerson: { type: String, default: '' },
-  transporter: { type: String, default: '' },
   deliveryCharges: { type: Number, default: 0 },
   
   bankName: { type: String, default: '' },

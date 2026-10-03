@@ -14,23 +14,35 @@ const createBranch = async (req, res, next) => {
       branchData.hsn = ''; // even if not in schema, safe to clear
     }
 
+    const companyId = req.user?.company || req.user?.companyId || req.body.company;
+
     const branch = await Branch.create({
       ...branchData,
       id,
-      company: req.user?.company || req.body.company
+      company: companyId || null
     });
     res.status(201).json({ success: true, data: branch });
   } catch (error) {
+    if (error.code === 11000) {
+      res.status(400);
+      return next(new Error('Yeh Branch pehle se hi registered hai! Kripya dusra Branch Name ya ID use karein.'));
+    }
     next(error);
   }
 };
 
 const getBranches = async (req, res, next) => {
   try {
-    const query = req.user?.company ? { company: req.user.company } : {};
+    const userCompany = req.user?.company || req.user?.companyId;
+    const query = userCompany ? { company: userCompany } : {};
+    
+    console.log('Fetching branches with query:', query);
     const branches = await Branch.find(query);
+    console.log(`Found ${branches.length} branches in DB for this company.`);
+    
     res.json({ success: true, data: branches });
   } catch (error) {
+    console.error('Error fetching branches:', error);
     next(error);
   }
 };

@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const bankPaymentInvoiceSchema = new mongoose.Schema({
-  invoiceNo: { type: String, required: true },
+  referenceNo: { type: String },
+  invoiceNo: { type: String, default: '' },
   invoiceAmount: { type: Number, default: 0 },
   dueAmount: { type: Number, default: 0 },
   adjustAmount: { type: Number, default: 0 }
@@ -14,6 +15,7 @@ const bankPaymentSchema = new mongoose.Schema({
   paymentDate: { type: String, required: true },
   company: { type: String, default: '' },
   branch: { type: String, default: '' },
+  warehouse: { type: String, default: '' },
   bankAccount: { type: String, default: '' },
   paymentType: { type: String, default: 'Supplier' },
 

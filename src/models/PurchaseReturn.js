@@ -17,14 +17,14 @@ const purchaseReturnSchema = new mongoose.Schema({
   returnType: { type: String, default: 'Partial' },
   company: { type: String, default: '' },
   branch: { type: String, default: '' },
-  warehouse: { type: String, default: '' },
+  warehouse: { type: String, ref: 'Warehouse', default: '' },
   status: { type: String, default: 'Draft' },
 
   // Purchase Ref Info
   purchaseInvoice: { type: String, default: '' },
   purchaseOrder: { type: String, default: '' },
   purchaseDate: { type: String, default: '' },
-  supplier: { type: String, default: '' },
+  supplier: { type: String, ref: 'Supplier', default: '' },
   supplierInvoiceNo: { type: String, default: '' },
   grnNo: { type: String, default: '' },
 
