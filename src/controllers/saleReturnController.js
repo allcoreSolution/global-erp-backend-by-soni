@@ -1,4 +1,6 @@
 const { SaleReturn } = require('../models/SaleReturn');
+const mongoose = require('mongoose');
+const Product = mongoose.model('Product');
 
 // @desc    Create a new Sale Return
 // @route   POST /api/sale-returns
@@ -9,6 +11,18 @@ const createSaleReturn = async (req, res, next) => {
       ...req.body,
       company: req.user?.companyId || req.body.company
     });
+
+    // Automatically increase product stock based on returned items
+    if (req.body.items && req.body.items.length > 0) {
+      for (const item of req.body.items) {
+        if (item.product && item.quantity) {
+          await Product.findOneAndUpdate(
+            { productName: item.product },
+            { $inc: { currentStock: item.quantity } }
+          );
+        }
+      }
+    }
 
     res.status(201).json({ success: true, data: newSaleReturn });
   } catch (error) {

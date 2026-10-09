@@ -1,5 +1,8 @@
 const { Sale, Coupon } = require('../models/Sale');
 const { Product } = require('../models/Product');
+const CustomerReq = require('../models/Customer');
+const Customer = CustomerReq.Customer || CustomerReq;
+const User = require('../models/User');
 
 // @desc    Process a sale (POS or Add Sale)
 // @route   POST /api/sales
@@ -9,7 +12,7 @@ const createSale = async (req, res, next) => {
     customer, customerMobile, orderItems, discountTotal, paymentMode, amountPaid,
     saleDate, referenceNo, biller, warehouse, currency, exchangeRate, 
     orderTax, discountType, discountValue, shippingCost, saleStatus, 
-    paymentStatus, saleNote, staffNote 
+    paymentStatus, saleNote, staffNote, documentUrl
   } = req.body;
 
   try {
@@ -46,7 +49,7 @@ const createSale = async (req, res, next) => {
 
       if (whStock.stock < item.quantity) {
         res.status(400);
-        return next(new Error(`Insufficient stock for product ${dbProduct.productName} in warehouse ${targetWarehouseName}. Available: ${whStock.stock}`));
+        return next(new Error(`Insufficient stock for product ${dbProduct.productName} in the selected warehouse. Available: ${whStock.stock}`));
       }
 
       const itemPrice = item.netUnitPrice || dbProduct.productPrice || dbProduct.salePrice || 0;
@@ -63,8 +66,8 @@ const createSale = async (req, res, next) => {
 
       computedItems.push({
         product: dbProduct._id,
-        name: item.name || dbProduct.name,
-        code: item.code || dbProduct.code,
+        name: item.name || dbProduct.productName,
+        code: item.code || dbProduct.productCode,
         quantity: item.quantity,
         netUnitPrice: itemPrice,
         discount: itemDiscount,
@@ -111,16 +114,65 @@ const createSale = async (req, res, next) => {
       paymentStatus,
       saleNote,
       staffNote,
+      documentUrl,
       subTotal,
       discountTotal: discountTotal || 0,
       taxTotal,
       grandTotal: finalGrandTotal,
       paymentMode,
-      amountPaid: amountPaid || finalGrandTotal,
-      changeReturned: Math.max(0, (amountPaid || finalGrandTotal) - finalGrandTotal),
+      amountPaid: amountPaid !== undefined ? amountPaid : (paymentStatus === 'Pending' ? 0 : finalGrandTotal),
+      changeReturned: Math.max(0, (amountPaid !== undefined ? amountPaid : (paymentStatus === 'Pending' ? 0 : finalGrandTotal)) - finalGrandTotal),
       salesPerson: req.user?._id,
       company: req.user?.company || req.body.company
     });
+
+    // --- AUTO-VOUCHER LOGIC FOR DAY BOOK ---
+    try {
+      const Voucher = require('../models/Voucher');
+      const AccountLedger = require('../models/AccountLedger');
+      
+      const companyId = req.user?.company || req.body.company || null;
+
+      // 1. Find or create 'Sales Account'
+      let salesAcc = await AccountLedger.findOne({ accountName: 'Sales Account', company: companyId });
+      if (!salesAcc) {
+        salesAcc = await AccountLedger.create({ accountName: 'Sales Account', groupType: 'Income', balanceType: 'Cr', company: companyId });
+      }
+
+      // 2. Find or create 'Accounts Receivable' or 'Cash Account' depending on payment status
+      let custAccName = paymentStatus === 'Paid' ? 'Cash Account' : 'Accounts Receivable';
+      let custAcc = await AccountLedger.findOne({ accountName: custAccName, company: companyId });
+      if (!custAcc) {
+        custAcc = await AccountLedger.create({ accountName: custAccName, groupType: 'Asset', balanceType: 'Dr', company: companyId });
+      }
+
+      // 3. Post the Voucher (Double Entry)
+      await Voucher.create({
+        voucherNo: `V-${invoiceNo}`,
+        date: saleDate || new Date().toISOString().split('T')[0],
+        voucherType: 'Sales',
+        company: companyId,
+        status: 'Posted',
+        generalNarration: `Auto-generated voucher for Sale ${invoiceNo}`,
+        entries: [
+          {
+            account: custAcc._id,
+            debitAmount: finalGrandTotal,
+            creditAmount: 0,
+            narration: `Amount due from customer / cash received`
+          },
+          {
+            account: salesAcc._id,
+            debitAmount: 0,
+            creditAmount: finalGrandTotal,
+            narration: `Sales Revenue`
+          }
+        ]
+      });
+    } catch (vErr) {
+      console.error("Voucher Auto-posting failed for Sale:", vErr);
+    }
+    // ----------------------------------------
 
     res.status(201).json({ success: true, data: newSale });
   } catch (error) {
@@ -133,7 +185,32 @@ const createSale = async (req, res, next) => {
 // @access  Private
 const getSales = async (req, res, next) => {
   try {
-    const sales = await Sale.find({ company: req.user?.company }).populate('salesPerson', 'username email');
+    const query = {}; // Temporarily remove company filter for testing
+    
+    // Add customer filter if provided
+    if (req.query.customer) {
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(req.query.customer)) {
+        query.customer = req.query.customer;
+      } else {
+        // Find customer by name
+        const CustomerReq = require('../models/Customer');
+        const Customer = CustomerReq.Customer || CustomerReq;
+        const customerDoc = await Customer.findOne({ name: req.query.customer });
+        if (customerDoc) {
+          query.customer = customerDoc._id;
+        } else {
+          // If customer not found by name, force an empty result
+          query.customer = new mongoose.Types.ObjectId();
+        }
+      }
+    }
+
+    const sales = await Sale.find(query)
+      .populate('salesPerson', 'username email')
+      .populate('customer', 'name email phone')
+      .populate('warehouse', 'name');
+      
     res.json({ success: true, data: sales });
   } catch (error) {
     next(error);

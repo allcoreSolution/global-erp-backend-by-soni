@@ -1,4 +1,33 @@
 const { StockTransfer } = require('../models/StockTransfer');
+const { Product } = require('../models/Product');
+
+// Helper to transfer stock between warehouses
+const updateWarehouseStock = async (productName, qty, fromWarehouse, toWarehouse) => {
+  const product = await Product.findOne({ productName });
+  if (!product) return;
+
+  // Deduct from source warehouse
+  if (fromWarehouse) {
+    const fromIndex = product.warehouseStocks.findIndex(w => w.warehouse === fromWarehouse);
+    if (fromIndex >= 0) {
+      product.warehouseStocks[fromIndex].stock = (product.warehouseStocks[fromIndex].stock || 0) - qty;
+    } else {
+      product.warehouseStocks.push({ warehouse: fromWarehouse, stock: -qty });
+    }
+  }
+
+  // Add to destination warehouse
+  if (toWarehouse) {
+    const toIndex = product.warehouseStocks.findIndex(w => w.warehouse === toWarehouse);
+    if (toIndex >= 0) {
+      product.warehouseStocks[toIndex].stock = (product.warehouseStocks[toIndex].stock || 0) + qty;
+    } else {
+      product.warehouseStocks.push({ warehouse: toWarehouse, stock: qty });
+    }
+  }
+
+  await product.save();
+};
 
 // @desc    Create a new Stock Transfer
 // @route   POST /api/stock-transfers
@@ -9,6 +38,14 @@ const createStockTransfer = async (req, res, next) => {
       ...req.body,
       company: req.user?.companyId || req.body.company
     });
+
+    if (newStockTransfer.items && newStockTransfer.items.length > 0) {
+      for (let item of newStockTransfer.items) {
+        if (item.product && item.qty) {
+          await updateWarehouseStock(item.product, item.qty, newStockTransfer.fromWarehouse, newStockTransfer.toWarehouse);
+        }
+      }
+    }
 
     res.status(201).json({ success: true, data: newStockTransfer });
   } catch (error) {
@@ -50,15 +87,37 @@ const getStockTransferById = async (req, res, next) => {
 // @access  Private
 const updateStockTransfer = async (req, res, next) => {
   try {
-    const stockTransfer = await StockTransfer.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
-    if (!stockTransfer) {
+    const oldTransfer = await StockTransfer.findById(req.params.id);
+    if (!oldTransfer) {
       res.status(404);
       return next(new Error('Stock Transfer not found'));
     }
-    res.json({ success: true, data: stockTransfer });
+
+    // Reverse old transfer
+    if (oldTransfer.items && oldTransfer.items.length > 0) {
+      for (let item of oldTransfer.items) {
+        if (item.product && item.qty) {
+          // Reversing: from toWarehouse back to fromWarehouse
+          await updateWarehouseStock(item.product, item.qty, oldTransfer.toWarehouse, oldTransfer.fromWarehouse);
+        }
+      }
+    }
+
+    const newTransfer = await StockTransfer.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
+
+    // Apply new transfer
+    if (newTransfer.items && newTransfer.items.length > 0) {
+      for (let item of newTransfer.items) {
+        if (item.product && item.qty) {
+          await updateWarehouseStock(item.product, item.qty, newTransfer.fromWarehouse, newTransfer.toWarehouse);
+        }
+      }
+    }
+
+    res.json({ success: true, data: newTransfer });
   } catch (error) {
     next(error);
   }
@@ -69,11 +128,22 @@ const updateStockTransfer = async (req, res, next) => {
 // @access  Private
 const deleteStockTransfer = async (req, res, next) => {
   try {
-    const stockTransfer = await StockTransfer.findByIdAndDelete(req.params.id);
-    if (!stockTransfer) {
+    const oldTransfer = await StockTransfer.findById(req.params.id);
+    if (!oldTransfer) {
       res.status(404);
       return next(new Error('Stock Transfer not found'));
     }
+
+    // Reverse old transfer
+    if (oldTransfer.items && oldTransfer.items.length > 0) {
+      for (let item of oldTransfer.items) {
+        if (item.product && item.qty) {
+          await updateWarehouseStock(item.product, item.qty, oldTransfer.toWarehouse, oldTransfer.fromWarehouse);
+        }
+      }
+    }
+
+    await StockTransfer.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Stock Transfer deleted successfully' });
   } catch (error) {
     next(error);

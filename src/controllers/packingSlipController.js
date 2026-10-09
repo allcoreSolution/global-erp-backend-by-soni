@@ -28,7 +28,15 @@ const createPackingSlip = async (req, res, next) => {
 const getPackingSlips = async (req, res, next) => {
   try {
     const query = req.user?.companyId ? { company: req.user.companyId } : {};
-    const packingSlips = await PackingSlip.find(query);
+    const packingSlips = await PackingSlip.find(query)
+      .populate({
+        path: 'saleId',
+        populate: {
+          path: 'customer',
+          model: 'Customer'
+        }
+      })
+      .populate('items.productId', 'productName productCode sku');
     res.json({ success: true, data: packingSlips });
   } catch (error) {
     next(error);
@@ -40,7 +48,14 @@ const getPackingSlips = async (req, res, next) => {
 // @access  Private
 const getPackingSlipById = async (req, res, next) => {
   try {
-    const packingSlip = await PackingSlip.findById(req.params.id);
+    const packingSlip = await PackingSlip.findById(req.params.id)
+      .populate({
+        path: 'saleId',
+        populate: {
+          path: 'customer',
+          model: 'Customer'
+        }
+      });
     if (!packingSlip) {
       res.status(404);
       return next(new Error('Packing Slip not found'));

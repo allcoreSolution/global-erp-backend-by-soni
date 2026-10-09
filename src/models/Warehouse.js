@@ -7,7 +7,7 @@ const warehouseSchema = new mongoose.Schema({
   phone: { type: String, default: '' },
   email: { type: String, default: '' },
   status: { type: Boolean, default: true },
-  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: [true, 'Warehouse ke liye Branch select karna zaruri hai!'] },
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' } // Tenant association
 }, { timestamps: true });
 

@@ -26,7 +26,7 @@ const createEmployee = async (req, res, next) => {
 // @access  Private
 const getEmployees = async (req, res, next) => {
   try {
-    const query = req.user?.companyId ? { company: req.user.companyId } : {};
+    const query = {}; // Temporarily remove company filter for testing
     const employees = await Employee.find(query);
     res.json({ success: true, data: employees });
   } catch (error) {

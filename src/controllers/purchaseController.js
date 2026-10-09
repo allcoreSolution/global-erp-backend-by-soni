@@ -3,7 +3,7 @@ const { Purchase } = require('../models/Purchase');
 const { Product, Brand, Category } = require('../models/Product');
 
 // ─────────────────────────────────────────────────────
-// HELPER: Product dhundho ya auto-banao, stock update karo
+// HELPER: Product dhundho ya auto-banao, stock update karo (No Transactions - Localhost Safe)
 // ─────────────────────────────────────────────────────
 const processStockForItem = async (item, warehouseId, companyId, isReverse = false) => {
   const qty = Number(item.quantity) || 0;
@@ -35,11 +35,11 @@ const processStockForItem = async (item, warehouseId, companyId, isReverse = fal
     if (brandId && !mongoose.Types.ObjectId.isValid(brandId)) {
       let existingBrand = await Brand.findOne({ name: brandId, company: companyId });
       if (!existingBrand) {
-        // Fallback to searching without company if global, but here we scope to company
         existingBrand = await Brand.findOne({ name: brandId });
       }
       if (!existingBrand) {
-        existingBrand = await Brand.create({ name: brandId, company: companyId });
+        const createdBrands = await Brand.create([{ name: brandId, company: companyId }]);
+        existingBrand = createdBrands[0];
       }
       brandId = existingBrand._id;
     }
@@ -52,15 +52,16 @@ const processStockForItem = async (item, warehouseId, companyId, isReverse = fal
         existingCat = await Category.findOne({ name: categoryId });
       }
       if (!existingCat) {
-        existingCat = await Category.create({ name: categoryId, company: companyId });
+        const createdCats = await Category.create([{ name: categoryId, company: companyId }]);
+        existingCat = createdCats[0];
       }
       categoryId = existingCat._id;
     }
 
-    dbProduct = await Product.create({
+    const createdProds = await Product.create([{
       productName: item.name || 'Unknown Product',
       productCode: autoCode,
-      sku: autoCode, // Set unique sku to avoid duplicate null errors
+      sku: autoCode,
       productCost: autoCost,
       productPrice: autoPrice,
       hsnNumber: item.hsnNumber || '',
@@ -75,33 +76,46 @@ const processStockForItem = async (item, warehouseId, companyId, isReverse = fal
       warehouseStocks: [],
       isActive: true,
       company: companyId || null
-    });
+    }]);
+    dbProduct = createdProds[0];
 
     console.log(`✅ Auto-created product: ${dbProduct.productName} (${autoCode})`);
   }
 
   if (!dbProduct) return null; // reverse ke time product na mile toh skip
 
-  // Step 4: currentStock update karo
-  dbProduct.currentStock = Math.max(0, (dbProduct.currentStock || 0) + stockChange);
+  // Step 4: Race condition prevent karne ke liye $inc use karo aur direct update karo
+  const updateData = { $inc: { currentStock: stockChange } };
+  
+  if (!isReverse && item.netUnitCost) {
+    updateData.$set = { productCost: String(item.netUnitCost) };
+  }
 
-  // Step 5: warehouseStocks update karo (warehouse-wise tracking)
+  // Update DB directly to prevent race condition lost updates
+  await Product.updateOne({ _id: dbProduct._id }, updateData);
+
+  // Update warehouse stock array safely using findOneAndUpdate and array filters
   if (warehouseId) {
     const wid = String(warehouseId);
-    const whEntry = dbProduct.warehouseStocks.find(w => String(w.warehouse) === wid);
-    if (whEntry) {
-      whEntry.stock = Math.max(0, (whEntry.stock || 0) + stockChange);
+    // Check if warehouse entry exists
+    const hasWarehouse = await Product.findOne({ 
+      _id: dbProduct._id, 
+      "warehouseStocks.warehouse": wid 
+    });
+
+    if (hasWarehouse) {
+      await Product.updateOne(
+        { _id: dbProduct._id, "warehouseStocks.warehouse": wid },
+        { $inc: { "warehouseStocks.$.stock": stockChange } }
+      );
     } else if (!isReverse) {
-      dbProduct.warehouseStocks.push({ warehouse: wid, stock: qty });
+      await Product.updateOne(
+        { _id: dbProduct._id },
+        { $push: { warehouseStocks: { warehouse: wid, stock: qty } } }
+      );
     }
   }
 
-  // Step 6: Cost price update karo (latest purchase price se)
-  if (!isReverse && item.netUnitCost) {
-    dbProduct.productCost = String(item.netUnitCost);
-  }
-
-  await dbProduct.save();
   return dbProduct._id; // product ka ObjectId return karo
 };
 
@@ -115,35 +129,51 @@ const addPurchase = async (req, res, next) => {
 
     if (!orderItems || orderItems.length === 0) {
       res.status(400);
-      return next(new Error('Koi bhi item nahi diya purchase mein!'));
+      throw new Error('Koi bhi item nahi diya purchase mein!');
     }
 
-    // Har item ke liye stock update + auto-create
     const processedItems = [];
     for (const item of orderItems) {
       const productId = await processStockForItem(item, warehouse, companyId, false);
       processedItems.push({
         ...item,
-        product: productId || item.product // auto-created product ka ID lagao
+        product: productId || item.product
       });
     }
 
-    // Purchase number generate karo
-    const purchaseNo = req.body.referenceNo ||
-      `PUR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    // Calculate total if not provided
+    let calculatedTotal = 0;
+    processedItems.forEach(item => {
+      calculatedTotal += (Number(item.netUnitCost) || 0) * (Number(item.quantity) || 0);
+    });
+    const finalGrandTotal = Number(req.body.grandTotal) || calculatedTotal;
 
-    // Purchase record save karo
-    const newPurchase = await Purchase.create({
+    // Purchase number generate karo
+    const purchaseNo = req.body.referenceNo || `PUR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+
+    const createdPurchases = await Purchase.create([{
       ...req.body,
       orderItems: processedItems,
       purchaseNo: purchaseNo,
       referenceNo: purchaseNo,
+      grandTotal: finalGrandTotal,
       company: companyId
-    });
+    }]);
+
+    const newPurchase = createdPurchases[0];
+
+    // ✅ MUNIM JI KI ENTRY: Supplier ka udhaar (balance) badhao
+    if (newPurchase.supplier && newPurchase.paymentStatus !== 'Paid') {
+      const { Supplier } = require('../models/Supplier');
+      await Supplier.updateOne(
+        { _id: newPurchase.supplier },
+        { $inc: { balance: finalGrandTotal } }
+      );
+    }
 
     res.status(201).json({
       success: true,
-      data: newPurchase,
+      data: createdPurchases[0],
       message: `Purchase saved! ${processedItems.length} item(s) ka stock update ho gaya.`
     });
   } catch (error) {
@@ -156,7 +186,30 @@ const addPurchase = async (req, res, next) => {
 // ─────────────────────────────────────────────────────
 const getPurchases = async (req, res, next) => {
   try {
-    const purchases = await Purchase.find()
+    const { supplierName, branchName } = req.query;
+    let filter = {};
+
+    if (supplierName) {
+      const { Supplier } = require('../models/Supplier');
+      const supplierDoc = await Supplier.findOne({ companyName: supplierName });
+      if (supplierDoc) {
+        filter.supplier = supplierDoc._id;
+      } else {
+        return res.json({ success: true, data: [] });
+      }
+    }
+
+    if (branchName) {
+      const { Branch } = require('../models/Branch');
+      const branchDoc = await Branch.findOne({ name: branchName });
+      if (branchDoc) {
+        filter.branch = branchDoc._id;
+      } else {
+        return res.json({ success: true, data: [] });
+      }
+    }
+    
+    const purchases = await Purchase.find(filter)
       .populate('warehouse', 'name code')
       .populate('branch', 'name')
       .populate('supplier', 'companyName supplierCode phone')
@@ -177,20 +230,76 @@ const getPurchases = async (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────────────
-// UPDATE PURCHASE — Basic update (stock changes nahi)
+// GET SINGLE PURCHASE (For Edit Page)
+// ─────────────────────────────────────────────────────
+const getPurchaseById = async (req, res, next) => {
+  try {
+    const purchase = await Purchase.findById(req.params.id)
+      .populate('supplier')
+      .populate('warehouse')
+      .populate('branch')
+      .populate({
+        path: 'orderItems.product',
+        select: 'productName productCode'
+      });
+
+    if (!purchase) {
+      res.status(404);
+      return next(new Error('Purchase not found'));
+    }
+
+    res.json({ success: true, data: purchase });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─────────────────────────────────────────────────────
+// UPDATE PURCHASE — Basic update
 // ─────────────────────────────────────────────────────
 const updatePurchase = async (req, res, next) => {
   try {
-    const purchase = await Purchase.findByIdAndUpdate(
+    const oldPurchase = await Purchase.findById(req.params.id);
+    if (!oldPurchase) {
+      res.status(404);
+      throw new Error('Purchase nahi mili!');
+    }
+
+    const { orderItems, warehouse } = req.body;
+    const companyId = req.user?.companyId || req.body.company || oldPurchase.company;
+
+    if (!orderItems || orderItems.length === 0) {
+      res.status(400);
+      throw new Error('Koi bhi item nahi diya edit purchase mein!');
+    }
+
+    // 1. REVERSE old stock (subtract from warehouse)
+    for (const item of oldPurchase.orderItems) {
+      await processStockForItem(item, oldPurchase.warehouse, oldPurchase.company, true);
+    }
+
+    // 2. APPLY new stock (add to warehouse)
+    const processedItems = [];
+    for (const item of orderItems) {
+      const productId = await processStockForItem(item, warehouse, companyId, false);
+      processedItems.push({
+        ...item,
+        product: productId || item.product
+      });
+    }
+
+    // 3. Update Document
+    const updatedPurchase = await Purchase.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      {
+        ...req.body,
+        orderItems: processedItems,
+        company: companyId
+      },
       { new: true, runValidators: true }
     );
-    if (!purchase) {
-      res.status(404);
-      return next(new Error('Purchase nahi mili!'));
-    }
-    res.json({ success: true, data: purchase });
+
+    res.json({ success: true, data: updatedPurchase, message: 'Purchase update ho gayi aur stock adjust ho gaya!' });
   } catch (error) {
     next(error);
   }
@@ -204,7 +313,7 @@ const deletePurchase = async (req, res, next) => {
     const purchase = await Purchase.findById(req.params.id);
     if (!purchase) {
       res.status(404);
-      return next(new Error('Purchase nahi mili!'));
+      throw new Error('Purchase nahi mili!');
     }
 
     // ✅ Pehle stock REVERSE karo
@@ -212,13 +321,20 @@ const deletePurchase = async (req, res, next) => {
       await processStockForItem(item, purchase.warehouse, purchase.company, true);
     }
 
+    // ✅ MUNIM JI KI ENTRY: Supplier ka udhaar (balance) wapas ghatao
+    if (purchase.supplier && purchase.paymentStatus !== 'Paid') {
+      const { Supplier } = require('../models/Supplier');
+      const purchaseAmount = Number(purchase.grandTotal) || 0;
+      await Supplier.updateOne(
+        { _id: purchase.supplier },
+        { $inc: { balance: -purchaseAmount } }
+      );
+    }
+
     // Phir purchase delete karo
     await Purchase.findByIdAndDelete(req.params.id);
 
-    res.json({
-      success: true,
-      message: 'Purchase delete ho gayi aur stock wapas ho gaya!'
-    });
+    res.json({ success: true, message: 'Purchase delete ho gayi aur stock wapas ho gaya!' });
   } catch (error) {
     next(error);
   }
@@ -234,7 +350,7 @@ const importPurchase = async (req, res, next) => {
 
     if (!orderItems || orderItems.length === 0) {
       res.status(400);
-      return next(new Error('Import ke liye koi item nahi mila!'));
+      throw new Error('Import ke liye koi item nahi mila!');
     }
 
     const processedItems = [];
@@ -245,19 +361,15 @@ const importPurchase = async (req, res, next) => {
 
     const purchaseNo = `IMP-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
 
-    const newPurchase = await Purchase.create({
+    const newPurchases = await Purchase.create([{
       ...req.body,
       orderItems: processedItems,
       referenceNo: purchaseNo,
       purchaseDate: new Date().toISOString(),
       company: companyId
-    });
+    }]);
 
-    res.status(201).json({
-      success: true,
-      data: newPurchase,
-      message: 'Purchase import ho gayi!'
-    });
+    res.status(201).json({ success: true, data: newPurchases[0], message: 'Purchase import ho gayi!' });
   } catch (error) {
     next(error);
   }
@@ -266,9 +378,8 @@ const importPurchase = async (req, res, next) => {
 module.exports = {
   addPurchase,
   getPurchases,
+  getPurchaseById,
   updatePurchase,
   deletePurchase,
   importPurchase
 };
-
-

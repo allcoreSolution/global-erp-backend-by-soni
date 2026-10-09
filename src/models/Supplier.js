@@ -36,6 +36,8 @@ const supplierSchema = new mongoose.Schema({
   purchasePriceList: { type: String, default: '' },
   discount: { type: Number, default: 0 },
   additionalDiscount: { type: Number, default: 0 },
+  balance: { type: Number, default: 0 }, // Automatically maintained by purchase/payment flow
+
   
   documents: {
     gstCert: { type: String, default: null },

@@ -2,10 +2,7 @@ const mongoose = require('mongoose');
 
 const stockTransferItemSchema = new mongoose.Schema({
   product: { type: String, required: true },
-  qty: { type: Number, required: true, default: 0 },
-  unit: { type: String, default: 'Nos' },
-  batch: { type: String, default: '' },
-  serial: { type: String, default: '' }
+  qty: { type: Number, required: true, default: 0 }
 });
 
 const stockTransferSchema = new mongoose.Schema({
@@ -13,7 +10,6 @@ const stockTransferSchema = new mongoose.Schema({
   transferNo: { type: String, required: true, unique: true },
   voucherNo: { type: String }, // To bypass legacy duplicate index E11000
   date: { type: String, required: true },
-  company: { type: String, default: '' },
   status: { type: String, default: 'Pending' },
   
   // Location Info
@@ -21,8 +17,6 @@ const stockTransferSchema = new mongoose.Schema({
   toWarehouse: { type: String, required: true },
 
   // Reference Info
-  reference: { type: String, default: '' },
-  reason: { type: String, default: '' },
   remarks: { type: String, default: '' },
 
   // Items

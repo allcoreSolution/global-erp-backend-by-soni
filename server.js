@@ -177,7 +177,6 @@ app.use('/api/journal-vouchers', journalVoucherRoutes);
 // const hrmsRoutes = require('./src/routes/hrmsRoutes');
 // app.use('/api/hrms', hrmsRoutes);
 
-// Removed duplicate for Employee Routes
 
 // Salary Structure Routes
 const salaryStructureRoutes = require('./src/routes/salaryStructureRoutes');
@@ -196,8 +195,8 @@ const departmentRoutes = require('./src/routes/departmentRoutes');
 app.use('/api/departments', departmentRoutes);
 
 // Designation Routes
-const designationRoutes = require('./src/routes/designationRoutes');
-app.use('/api/designations', designationRoutes);
+// const designationRoutes = require('./src/routes/designationRoutes');
+// app.use('/api/designations', designationRoutes);
 
 // Shift Setup Routes
 const shiftSetupRoutes = require('./src/routes/shiftSetupRoutes');
@@ -248,6 +247,10 @@ app.use('/api/statutory', statutoryRoutes);
 // Account Ledger Routes
 const accountLedgerRoutes = require('./src/routes/accountLedgerRoutes');
 app.use('/api/account-ledgers', accountLedgerRoutes);
+
+// Account Group Routes
+const accountGroupRoutes = require('./src/routes/accountGroupRoutes');
+app.use('/api/account-groups', accountGroupRoutes);
 
 // Voucher Routes
 const voucherRoutes = require('./src/routes/voucherRoutes');

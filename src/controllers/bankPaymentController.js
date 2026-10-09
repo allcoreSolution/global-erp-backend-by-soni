@@ -1,4 +1,5 @@
 const { BankPayment } = require('../models/BankPayment');
+const { Purchase } = require('../models/Purchase');
 
 // @desc    Create a new Bank Payment
 // @route   POST /api/bank-payments
@@ -9,6 +10,27 @@ const createBankPayment = async (req, res, next) => {
       ...req.body,
       company: req.user?.companyId || req.body.company
     });
+
+    const adjustments = req.body.invoices || req.body.invoiceAdjustments;
+    if (adjustments && adjustments.length > 0) {
+      for (const inv of adjustments) {
+        const invId = inv.id || inv.invoiceId;
+        if (invId && inv.adjustAmount > 0) {
+          const purchase = await Purchase.findById(invId);
+          if (purchase) {
+            purchase.amountPaid = (purchase.amountPaid || 0) + Number(inv.adjustAmount);
+            if (purchase.amountPaid >= purchase.grandTotal) {
+              purchase.paymentStatus = 'Paid';
+            } else if (purchase.amountPaid > 0) {
+              purchase.paymentStatus = 'Partial';
+            } else {
+              purchase.paymentStatus = 'Pending';
+            }
+            await purchase.save();
+          }
+        }
+      }
+    }
 
     res.status(201).json({ success: true, data: newBankPayment });
   } catch (error) {

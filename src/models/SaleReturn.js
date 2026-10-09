@@ -11,8 +11,9 @@ const saleReturnItemSchema = new mongoose.Schema({
 const saleReturnSchema = new mongoose.Schema({
   returnNumber: { type: String, required: true, unique: true },
   returnDate: { type: String, required: true },
-  customerName: { type: String, required: true },
-  invoiceNumber: { type: String, required: true },
+  customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+  sale: { type: mongoose.Schema.Types.ObjectId, ref: 'Sale', required: true },
+  invoiceNumber: { type: String, required: true }, // Keep this for easy display
   returnReason: { type: String, default: 'Defective Product' },
   status: { type: String, default: 'Pending' },
   refundMethod: { type: String, default: 'Original Payment Method' },
