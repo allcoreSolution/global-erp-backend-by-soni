@@ -1,4 +1,5 @@
 const { Receipt } = require('../models/Receipt');
+const { Sale } = require('../models/Sale');
 
 // @desc    Create a new Receipt
 // @route   POST /api/receipts
@@ -9,6 +10,24 @@ const createReceipt = async (req, res, next) => {
       ...req.body,
       company: req.user?.companyId || req.body.company
     });
+
+    // Update Sale Payment Status and Paid Amount
+    if (req.body.referenceInvoice) {
+      const sale = await Sale.findById(req.body.referenceInvoice);
+      if (sale) {
+        sale.amountPaid = (sale.amountPaid || 0) + Number(req.body.paymentAmount || 0);
+        
+        if (sale.amountPaid >= sale.grandTotal) {
+          sale.paymentStatus = 'Paid';
+        } else if (sale.amountPaid > 0) {
+          sale.paymentStatus = 'Partial';
+        } else {
+          sale.paymentStatus = 'Pending';
+        }
+        
+        await sale.save();
+      }
+    }
 
     res.status(201).json({ success: true, data: newReceipt });
   } catch (error) {

@@ -7,7 +7,6 @@ const priceListSchema = new mongoose.Schema({
   applicableFor: { type: String, default: 'Retailer' },
   customerType: { type: String, default: 'Retailer' },
   currency: { type: String, default: 'INR' },
-  branch: { type: String, default: '' },
   effectiveFrom: { type: String, default: '' },
   effectiveTo: { type: String, default: '' },
   defaultPriceList: { type: Boolean, default: false },
@@ -17,9 +16,10 @@ const priceListSchema = new mongoose.Schema({
     product: { type: String },
     sku: { type: String },
     unit: { type: String },
-    basePrice: { type: String },
-    discount: { type: String },
-    tax: { type: String }
+    retailRate: { type: String, default: '0' },
+    wholesaleRate: { type: String, default: '0' },
+    effectiveFrom: { type: String, default: '' },
+    effectiveTo: { type: String, default: '' }
   }],
   quantityPricing: [{
     minQty: { type: Number },

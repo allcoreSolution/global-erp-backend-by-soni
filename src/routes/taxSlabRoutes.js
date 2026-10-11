@@ -10,11 +10,11 @@ const {
 } = require('../controllers/taxSlabController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.get('/', protect, getTaxSlabs);
-router.get('/:id', protect, getTaxSlabById);
-router.post('/', protect, checkPermission('manage_products'), createTaxSlab);
-router.put('/:id', protect, checkPermission('manage_products'), updateTaxSlab);
-router.patch('/:id', protect, checkPermission('manage_products'), patchTaxSlab);
-router.delete('/:id', protect, checkPermission('manage_products'), deleteTaxSlab);
+router.get('/', protect, checkPermission('view_tax_slabs'), getTaxSlabs);
+router.get('/:id', protect, checkPermission('view_tax_slabs'), getTaxSlabById);
+router.post('/', protect, checkPermission('create_tax_slabs'), createTaxSlab);
+router.put('/:id', protect, checkPermission('edit_tax_slabs'), updateTaxSlab);
+router.patch('/:id', protect, checkPermission('edit_tax_slabs'), patchTaxSlab);
+router.delete('/:id', protect, checkPermission('delete_tax_slabs'), deleteTaxSlab);
 
 module.exports = router;

@@ -9,10 +9,10 @@ const {
 } = require('../controllers/accountLedgerController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.post('/', protect, checkPermission('manage_hrms'), createLedger);
-router.get('/', protect, checkPermission('manage_hrms'), getLedgers);
-router.get('/:id', protect, checkPermission('manage_hrms'), getLedgerById);
-router.put('/:id', protect, checkPermission('manage_hrms'), updateLedger);
-router.delete('/:id', protect, checkPermission('manage_hrms'), deleteLedger);
+router.post('/', protect, checkPermission('create_ledgers'), createLedger);
+router.get('/', protect, checkPermission('view_ledgers'), getLedgers);
+router.get('/:id', protect, checkPermission('view_ledgers'), getLedgerById);
+router.put('/:id', protect, checkPermission('edit_ledgers'), updateLedger);
+router.delete('/:id', protect, checkPermission('delete_ledgers'), deleteLedger);
 
 module.exports = router;

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const challanItemSchema = new mongoose.Schema({
   product: { type: String, default: '' },
+  productName: { type: String, default: '' },
   sku: { type: String, default: '' },
   batch: { type: String, default: '' },
   qty: { type: String, default: '' },

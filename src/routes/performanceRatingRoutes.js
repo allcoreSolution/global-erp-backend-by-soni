@@ -9,10 +9,10 @@ const {
 } = require('../controllers/performanceRatingController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.post('/', protect, checkPermission('manage_hrms'), addPerformanceRating);
-router.get('/', protect, checkPermission('manage_hrms'), getPerformanceRatings);
-router.get('/:id', protect, checkPermission('manage_hrms'), getPerformanceRatingById);
-router.put('/:id', protect, checkPermission('manage_hrms'), updatePerformanceRating);
-router.delete('/:id', protect, checkPermission('manage_hrms'), deletePerformanceRating);
+router.post('/', protect, checkPermission('create_performance_ratings'), addPerformanceRating);
+router.get('/', protect, checkPermission('view_performance_ratings'), getPerformanceRatings);
+router.get('/:id', protect, checkPermission('view_performance_ratings'), getPerformanceRatingById);
+router.put('/:id', protect, checkPermission('edit_performance_ratings'), updatePerformanceRating);
+router.delete('/:id', protect, checkPermission('delete_performance_ratings'), deletePerformanceRating);
 
 module.exports = router;

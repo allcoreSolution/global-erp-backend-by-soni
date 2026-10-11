@@ -10,12 +10,12 @@ const {
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
 router.route('/')
-  .post(protect, checkPermission('manage_hrms'), createDepartment)
-  .get(protect, getDepartments);
+  .post(protect, checkPermission('create_departments'), createDepartment)
+  .get(protect, checkPermission('view_departments'), getDepartments);
 
 router.route('/:id')
-  .get(protect, getDepartmentById)
-  .put(protect, checkPermission('manage_hrms'), updateDepartment)
-  .delete(protect, checkPermission('manage_hrms'), deleteDepartment);
+  .get(protect, checkPermission('view_departments'), getDepartmentById)
+  .put(protect, checkPermission('edit_departments'), updateDepartment)
+  .delete(protect, checkPermission('delete_departments'), deleteDepartment);
 
 module.exports = router;

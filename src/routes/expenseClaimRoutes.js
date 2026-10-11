@@ -9,10 +9,10 @@ const {
 } = require('../controllers/expenseClaimController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.post('/', protect, checkPermission('manage_hrms'), claimExpense);
-router.get('/', protect, checkPermission('manage_hrms'), getExpenseClaims);
-router.get('/:id', protect, checkPermission('manage_hrms'), getExpenseClaimById);
-router.put('/:id', protect, checkPermission('manage_hrms'), updateExpenseClaim);
-router.delete('/:id', protect, checkPermission('manage_hrms'), deleteExpenseClaim);
+router.post('/', protect, checkPermission('create_expenses'), claimExpense);
+router.get('/', protect, checkPermission('view_expenses'), getExpenseClaims);
+router.get('/:id', protect, checkPermission('view_expenses'), getExpenseClaimById);
+router.put('/:id', protect, checkPermission('edit_expenses'), updateExpenseClaim);
+router.delete('/:id', protect, checkPermission('delete_expenses'), deleteExpenseClaim);
 
 module.exports = router;

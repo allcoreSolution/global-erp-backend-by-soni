@@ -10,12 +10,12 @@ const {
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
 router.route('/')
-  .post(protect, checkPermission('create_purchases'), createPurchaseReturn)
+  .post(protect, checkPermission('create_purchase_returns'), createPurchaseReturn)
   .get(protect, getPurchaseReturns);
 
 router.route('/:id')
   .get(protect, getPurchaseReturnById)
-  .put(protect, checkPermission('create_purchases'), updatePurchaseReturn)
-  .delete(protect, checkPermission('create_purchases'), deletePurchaseReturn);
+  .put(protect, checkPermission('create_purchase_returns'), updatePurchaseReturn)
+  .delete(protect, checkPermission('create_purchase_returns'), deletePurchaseReturn);
 
 module.exports = router;

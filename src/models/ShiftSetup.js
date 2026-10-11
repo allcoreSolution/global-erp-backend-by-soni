@@ -50,26 +50,19 @@ const shiftSetupSchema = new mongoose.Schema({
   weeklyOff: { type: String, default: 'Sunday' },
 
   // Attendance Rules
-  attendanceRequired: { type: String, default: 'Yes' },
-  lateComing: { type: String, default: 'Allowed' },
   halfDayAfter: { type: String, default: '4' },
   minimumHours: { type: String, default: '8' },
-  attendanceMethod: { type: String, default: 'Biometric' },
-  autoCheckout: { type: String, default: 'No' },
 
   // Shift Assignment
-  assignTo: { type: String, default: 'Department' },
-  employee: { type: String, default: '' },
   effectiveFrom: { type: String, default: '' },
-  effectiveTo: { type: String, default: '' },
   defaultShift: { type: String, default: 'No' },
 
   // Night Shift
-  nightShift: { type: String, default: 'No' },
-  crossMidnight: { type: String, default: 'No' },
-  nextDayCheckout: { type: String, default: 'Auto' }
+  nightShift: { type: String, default: 'No' }
 }, { timestamps: true });
 
 const ShiftSetup = mongoose.model('ShiftSetup', shiftSetupSchema);
 
-module.exports = { ShiftSetup };
+ShiftSetup.ShiftSetup = ShiftSetup;
+module.exports = ShiftSetup;
+module.exports.ShiftSetup = ShiftSetup;

@@ -7,7 +7,7 @@ const {
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
 router.route('/')
-  .get(protect, getHrmsMasterSettings)
-  .put(protect, checkPermission('manage_hrms'), updateHrmsMasterSettings);
+  .get(protect, checkPermission('view_hrms_settings'), getHrmsMasterSettings)
+  .put(protect, checkPermission('edit_hrms_settings'), updateHrmsMasterSettings);
 
 module.exports = router;

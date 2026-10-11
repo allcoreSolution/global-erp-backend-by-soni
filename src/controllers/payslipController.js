@@ -14,50 +14,95 @@ const generatePayslipPreview = async (req, res, next) => {
     const employee = await Employee.findById(employeeId);
     if (!employee) return res.status(404).json({ success: false, message: 'Employee not found' });
 
-    let structureId = salaryStructureId || employee.salaryStructure?._id;
-    let salaryStructure;
-    if (structureId) {
-      salaryStructure = await SalaryStructure.findById(structureId);
-    } else {
-      salaryStructure = await SalaryStructure.findOne({ company: req.user?.companyId });
+    // 1. Find employee's assigned salary structure
+    let salaryStructure = null;
+    if (salaryStructureId) {
+      salaryStructure = await SalaryStructure.findById(salaryStructureId);
+    }
+    if (!salaryStructure) {
+      // Find salary structure assigned specifically to this employee
+      salaryStructure = await SalaryStructure.findOne({ 
+        $or: [
+          { employee: employee._id },
+          { employeeId: employee.employeeId }
+        ]
+      });
+    }
+    if (!salaryStructure) {
+      // Fallback: match by company & department
+      const companyId = req.user?.company || req.user?.companyId;
+      salaryStructure = await SalaryStructure.findOne({ 
+        ...(companyId ? { company: companyId } : {}),
+        department: employee.department
+      }) || await SalaryStructure.findOne({
+        ...(companyId ? { company: companyId } : {})
+      });
     }
 
     if (!salaryStructure) {
-      // Fallback to employee's own salary data if no structure is defined
       salaryStructure = {
         workingDays: 30,
         earnings: [
-          { component: 'Basic', calculatedValue: employee.basicSalary || 0 },
-          { component: 'HRA', calculatedValue: employee.hra || 0 },
-          { component: 'Other Allowances', calculatedValue: employee.allowance || 0 }
+          { component: 'Basic Salary', calculatedValue: 25000 },
+          { component: 'HRA', calculatedValue: 10000 },
+          { component: 'Special Allowance', calculatedValue: 5000 }
         ],
-        deductions: []
+        deductions: [
+          { component: 'PF Employee (12%)', calculatedValue: 3000 },
+          { component: 'ESIC Employee (0.75%)', calculatedValue: 300 }
+        ]
       };
     }
-
-    let workingDays = Number(salaryStructure.workingDays) || 30;
-    let paidDays = workingDays;
 
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const monthIndex = monthNames.indexOf(month);
     
+    // Dynamic total calendar days in that month (handles 28, 29, 30, 31)
+    const yNum = Number(year);
+    const mNum = monthIndex !== -1 ? monthIndex + 1 : new Date().getMonth() + 1;
+    const totalDaysInMonth = new Date(yNum, mNum, 0).getDate();
+
+    let workingDays = totalDaysInMonth;
+    let paidDays = totalDaysInMonth;
+
     if (monthIndex !== -1) {
       const monthStr = String(monthIndex + 1).padStart(2, '0');
       const datePrefix = `${year}-${monthStr}`;
       
+      const companyId = req.user?.company || req.user?.companyId;
       const attendances = await Attendance.find({ 
-        employee: employeeId, 
-        company: req.user?.companyId,
+        $or: [
+          { employee: employeeId },
+          { employeeId: employee.employeeId },
+          { employeeName: employee.employeeName }
+        ],
+        ...(companyId ? { $or: [{ company: companyId }, { company: null }] } : {}),
         date: { $regex: `^${datePrefix}` } 
       });
 
       if (attendances.length > 0) {
-        workingDays = attendances.length;
-        paidDays = attendances.filter(a => a.status === 'Present' || a.status === 'Late').length;
+        // Calculate Payable Days formula: Present + Late + WeeklyOff + Holiday + Leave + (0.5 * HalfDay)
+        let pCount = 0;
+        let hdCount = 0;
+        let woCount = 0;
+        let hCount = 0;
+        let lvCount = 0;
+
+        attendances.forEach(a => {
+          if (a.status === 'Present') pCount++;
+          else if (a.status === 'Late') pCount++;
+          else if (a.status === 'Half Day') hdCount++;
+          else if (a.status === 'Weekly Off') woCount++;
+          else if (a.status === 'Holiday') hCount++;
+          else if (a.status === 'On Leave') lvCount++;
+        });
+
+        paidDays = pCount + (hdCount * 0.5) + woCount + hCount + lvCount;
+        workingDays = totalDaysInMonth;
       }
     }
 
-    const ratio = workingDays > 0 ? paidDays / workingDays : 1;
+    const ratio = workingDays > 0 ? (paidDays / workingDays) : 1;
     
     // Process Earnings from structure
     let basicSalary = 0, hra = 0, da = 0, otherAllowances = 0;
@@ -123,9 +168,203 @@ const generatePayslipPreview = async (req, res, next) => {
   }
 };
 
+const generateMonthlyBulkPayroll = async (req, res, next) => {
+  try {
+    const { month, year } = req.body;
+    if (!month || !year) {
+      return res.status(400).json({ success: false, message: 'Month and Year are required' });
+    }
+
+    const companyId = req.user?.company || req.user?.companyId;
+    const companyFilter = companyId ? { $or: [{ company: companyId }, { company: null }] } : {};
+
+    // 1. Fetch all active employees for this company
+    const activeEmployees = await Employee.find({ ...companyFilter, status: { $ne: 'Inactive' } });
+    if (activeEmployees.length === 0) {
+      return res.status(400).json({ success: false, message: 'No active employees found in this company' });
+    }
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const monthIndex = monthNames.indexOf(month);
+    const yNum = Number(year);
+    const mNum = monthIndex !== -1 ? monthIndex + 1 : new Date().getMonth() + 1;
+    const totalDaysInMonth = new Date(yNum, mNum, 0).getDate();
+    const monthStr = String(mNum).padStart(2, '0');
+    const datePrefix = `${year}-${monthStr}`;
+
+    // 2. Fetch all salary structures in company
+    const allStructures = await SalaryStructure.find(companyFilter);
+
+    // 3. Fetch all attendance records for this month
+    const allAttendances = await Attendance.find({
+      ...companyFilter,
+      date: { $regex: `^${datePrefix}` }
+    });
+
+    const generatedSlips = [];
+
+    for (const emp of activeEmployees) {
+      // Find salary structure assigned specifically to this employee or fallback to department
+      let struct = allStructures.find(s => 
+        (s.employee && String(s.employee) === String(emp._id)) ||
+        (s.employeeId && s.employeeId.trim() === (emp.employeeId || '').trim())
+      );
+
+      if (!struct) {
+        struct = allStructures.find(s => 
+          s.department && s.department.trim().toLowerCase() === (emp.department || '').trim().toLowerCase()
+        ) || allStructures[0];
+      }
+
+      // Default earnings & deductions fallback if no structure found
+      let basicSalaryFixed = 25000;
+      let hraFixed = 10000;
+      let daFixed = 0;
+      let otherAllowancesFixed = 5000;
+      let pfFixed = 3000;
+      let esiFixed = 300;
+      let loanFixed = 0;
+
+      if (struct) {
+        basicSalaryFixed = 0;
+        hraFixed = 0;
+        daFixed = 0;
+        otherAllowancesFixed = 0;
+        pfFixed = 0;
+        esiFixed = 0;
+
+        (struct.earnings || []).forEach(earn => {
+          const val = Number(earn.calculatedValue || earn.amount) || 0;
+          const comp = (earn.component || '').toLowerCase();
+          if (comp.includes('basic')) basicSalaryFixed += val;
+          else if (comp.includes('hra')) hraFixed += val;
+          else if (comp.includes('da')) daFixed += val;
+          else otherAllowancesFixed += val;
+        });
+
+        (struct.deductions || []).forEach(ded => {
+          const val = Number(ded.calculatedValue || ded.amount) || 0;
+          const comp = (ded.component || '').toLowerCase();
+          if (comp.includes('pf')) pfFixed += val;
+          else if (comp.includes('esi')) esiFixed += val;
+          else loanFixed += val;
+        });
+      }
+
+      // Calculate attendance payable days for this employee
+      const empAttendances = allAttendances.filter(a => 
+        (a.employee && String(a.employee) === String(emp._id)) ||
+        (a.employeeId && a.employeeId.trim() === (emp.employeeId || '').trim()) ||
+        (a.employeeName && a.employeeName.trim().toLowerCase() === (emp.employeeName || '').trim().toLowerCase())
+      );
+
+      let pCount = 0, hdCount = 0, woCount = 0, hCount = 0, lvCount = 0;
+      empAttendances.forEach(a => {
+        if (a.status === 'Present' || a.status === 'Late') pCount++;
+        else if (a.status === 'Half Day') hdCount++;
+        else if (a.status === 'Weekly Off') woCount++;
+        else if (a.status === 'Holiday') hCount++;
+        else if (a.status === 'On Leave') lvCount++;
+      });
+
+      // If records exist, calculate paid days. If not yet marked, default to total month days
+      const paidDays = empAttendances.length > 0
+        ? (pCount + (hdCount * 0.5) + woCount + hCount + lvCount)
+        : totalDaysInMonth;
+
+      const workingDays = totalDaysInMonth;
+      const ratio = workingDays > 0 ? (paidDays / workingDays) : 1;
+
+      // Pro-rated amounts based on Attendance Payable Days
+      const basicSalary = Math.round(basicSalaryFixed * ratio);
+      const hra = Math.round(hraFixed * ratio);
+      const da = Math.round(daFixed * ratio);
+      const otherAllowances = Math.round(otherAllowancesFixed * ratio);
+      const grossEarnings = basicSalary + hra + da + otherAllowances;
+
+      const pfDeduction = Math.round(pfFixed * ratio);
+      const esiDeduction = Math.round(esiFixed * ratio);
+      const loanDeduction = Math.round(loanFixed * ratio);
+      const totalDeductions = pfDeduction + esiDeduction + loanDeduction;
+      const netPay = Math.round(grossEarnings - totalDeductions);
+
+      // Create or update payslip in database (Upsert)
+      const payslipDoc = await Payslip.findOneAndUpdate(
+        {
+          employee: emp._id,
+          month,
+          year,
+          ...(companyId ? { company: companyId } : {})
+        },
+        {
+          employee: emp._id,
+          month,
+          year,
+          workingDays,
+          paidDays: Number(paidDays.toFixed(1)),
+          basicSalary,
+          hra,
+          da,
+          otherAllowances,
+          pfDeduction,
+          esiDeduction,
+          loanDeduction,
+          grossEarnings,
+          totalDeductions,
+          netPay,
+          status: 'Draft',
+          ...(companyId ? { company: companyId } : {})
+        },
+        { upsert: true, new: true }
+      ).populate('employee', 'employeeName employeeId department designation');
+
+      generatedSlips.push(payslipDoc);
+    }
+
+    res.json({
+      success: true,
+      message: `Generated monthly payroll for ${generatedSlips.length} employees successfully!`,
+      data: generatedSlips
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updatePayslipStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // 'Draft' | 'Completed' | 'Paid'
+    const payslip = await Payslip.findByIdAndUpdate(id, { status }, { new: true })
+      .populate('employee', 'employeeName employeeId department designation');
+    if (!payslip) return res.status(404).json({ success: false, message: 'Payslip not found' });
+    res.json({ success: true, message: `Status updated to ${status}`, data: payslip });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const completeAllPayslips = async (req, res, next) => {
+  try {
+    const { month, year } = req.body;
+    const companyId = req.user?.company || req.user?.companyId;
+    const filter = {
+      ...(month ? { month } : {}),
+      ...(year ? { year } : {}),
+      ...(companyId ? { company: companyId } : {})
+    };
+
+    await Payslip.updateMany(filter, { status: 'Completed' });
+    res.json({ success: true, message: 'All payslips for this period marked as Completed!' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const createPayslip = async (req, res, next) => {
   try {
-    const payslip = await Payslip.create({ ...req.body, company: req.user?.companyId });
+    const companyId = req.user?.company || req.user?.companyId;
+    const payslip = await Payslip.create({ ...req.body, ...(companyId ? { company: companyId } : {}) });
     res.status(201).json({ success: true, data: payslip });
   } catch (error) {
     next(error);
@@ -134,8 +373,16 @@ const createPayslip = async (req, res, next) => {
 
 const getPayslips = async (req, res, next) => {
   try {
-    const payslips = await Payslip.find({ company: req.user?.companyId })
-      .populate('employee', 'username employeeName email')
+    const { month, year } = req.query;
+    const companyId = req.user?.company || req.user?.companyId;
+    const filter = {
+      ...(companyId ? { $or: [{ company: companyId }, { company: null }] } : {}),
+      ...(month && month !== 'All' ? { month } : {}),
+      ...(year && year !== 'All' ? { year } : {})
+    };
+
+    const payslips = await Payslip.find(filter)
+      .populate('employee', 'username employeeName employeeId email department designation')
       .sort({ createdAt: -1 });
     res.json({ success: true, data: payslips });
   } catch (error) {
@@ -145,7 +392,8 @@ const getPayslips = async (req, res, next) => {
 
 const getPayslipById = async (req, res, next) => {
   try {
-    const payslip = await Payslip.findById(req.params.id).populate('employee', 'username employeeName email');
+    const payslip = await Payslip.findById(req.params.id)
+      .populate('employee', 'username employeeName employeeId email department designation');
     if (!payslip) {
       res.status(404);
       return next(new Error('Payslip not found'));
@@ -171,6 +419,9 @@ const deletePayslip = async (req, res, next) => {
 
 module.exports = {
   generatePayslipPreview,
+  generateMonthlyBulkPayroll,
+  updatePayslipStatus,
+  completeAllPayslips,
   createPayslip,
   getPayslips,
   getPayslipById,

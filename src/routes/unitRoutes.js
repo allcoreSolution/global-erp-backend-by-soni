@@ -10,11 +10,11 @@ const {
 } = require('../controllers/unitController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.get('/', protect, getUnits);
-router.get('/:id', protect, getUnitById);
-router.post('/', protect, checkPermission('manage_products'), createUnit);
-router.put('/:id', protect, checkPermission('manage_products'), updateUnit);
-router.patch('/:id', protect, checkPermission('manage_products'), patchUnit);
-router.delete('/:id', protect, checkPermission('manage_products'), deleteUnit);
+router.get('/', protect, checkPermission('view_units'), getUnits);
+router.get('/:id', protect, checkPermission('view_units'), getUnitById);
+router.post('/', protect, checkPermission('create_units'), createUnit);
+router.put('/:id', protect, checkPermission('edit_units'), updateUnit);
+router.patch('/:id', protect, checkPermission('edit_units'), patchUnit);
+router.delete('/:id', protect, checkPermission('delete_units'), deleteUnit);
 
 module.exports = router;

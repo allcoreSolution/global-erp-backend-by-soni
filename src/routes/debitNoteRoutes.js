@@ -10,15 +10,15 @@ const {
 } = require('../controllers/debitNoteController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.route('/import').post(protect, importDebitNotes);
+router.route('/import').post(protect, checkPermission('create_debit_notes'), importDebitNotes);
 
 router.route('/')
-  .post(protect, checkPermission('manage_purchases'), createDebitNote)
-  .get(protect, getDebitNotes);
+  .post(protect, checkPermission('create_debit_notes'), createDebitNote)
+  .get(protect, checkPermission('view_debit_notes'), getDebitNotes);
 
 router.route('/:id')
-  .get(protect, getDebitNoteById)
-  .put(protect, checkPermission('manage_purchases'), updateDebitNote)
-  .delete(protect, checkPermission('manage_purchases'), deleteDebitNote);
+  .get(protect, checkPermission('view_debit_notes'), getDebitNoteById)
+  .put(protect, checkPermission('edit_debit_notes'), updateDebitNote)
+  .delete(protect, checkPermission('delete_debit_notes'), deleteDebitNote);
 
 module.exports = router;

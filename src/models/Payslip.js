@@ -16,7 +16,7 @@ const payslipSchema = new mongoose.Schema({
   grossEarnings: { type: Number, default: 0 },
   totalDeductions: { type: Number, default: 0 },
   netPay: { type: Number, default: 0 },
-  status: { type: String, enum: ['Generated', 'Paid'], default: 'Generated' },
+  status: { type: String, enum: ['Draft', 'Generated', 'Completed', 'Paid'], default: 'Draft' },
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
 }, { timestamps: true });
 

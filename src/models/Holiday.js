@@ -2,7 +2,10 @@ const mongoose = require('mongoose');
 
 const holidaySchema = new mongoose.Schema({
   eventName: { type: String, required: true, trim: true },
-  holidayDate: { type: String, required: true, trim: true }, // or Date, but using String based on user's dd-mm-yyyy example
+  startDate: { type: String, trim: true }, // e.g. YYYY-MM-DD
+  endDate: { type: String, trim: true },   // e.g. YYYY-MM-DD
+  durationDays: { type: Number, default: 1 },
+  holidayDate: { type: String, trim: true }, // fallback/legacy single date support
   classificationType: { type: String, trim: true, default: 'National Holiday' },
   description: { type: String, trim: true },
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }

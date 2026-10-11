@@ -1,4 +1,6 @@
 const { Payment } = require('../models/Payment');
+const { Supplier } = require('../models/Supplier');
+const { Purchase } = require('../models/Purchase');
 
 // @desc    Create a new Payment
 // @route   POST /api/payments
@@ -9,6 +11,35 @@ const createPayment = async (req, res, next) => {
       ...req.body,
       company: req.user?.companyId || req.body.company
     });
+
+    if (req.body.supplierParty) {
+      await Supplier.findByIdAndUpdate(
+        req.body.supplierParty,
+        { $inc: { balance: -Number(req.body.paymentAmount || 0) } }
+      );
+    }
+
+    // Update Purchase invoices amountPaid and paymentStatus
+    const adjustments = req.body.invoices || req.body.invoiceAdjustments;
+    if (adjustments && adjustments.length > 0) {
+      for (const inv of adjustments) {
+        const invId = inv.id || inv.invoiceId;
+        if (invId && inv.adjustAmount > 0) {
+          const purchase = await Purchase.findById(invId);
+          if (purchase) {
+            purchase.amountPaid = (purchase.amountPaid || 0) + Number(inv.adjustAmount);
+            if (purchase.amountPaid >= purchase.grandTotal) {
+              purchase.paymentStatus = 'Paid';
+            } else if (purchase.amountPaid > 0) {
+              purchase.paymentStatus = 'Partial';
+            } else {
+              purchase.paymentStatus = 'Pending';
+            }
+            await purchase.save();
+          }
+        }
+      }
+    }
 
     res.status(201).json({ success: true, data: newPayment });
   } catch (error) {
@@ -74,6 +105,14 @@ const deletePayment = async (req, res, next) => {
       res.status(404);
       return next(new Error('Payment not found'));
     }
+
+    if (payment.supplierParty) {
+      await Supplier.findByIdAndUpdate(
+        payment.supplierParty,
+        { $inc: { balance: Number(payment.paymentAmount || 0) } }
+      );
+    }
+
     res.json({ success: true, message: 'Payment deleted successfully' });
   } catch (error) {
     next(error);

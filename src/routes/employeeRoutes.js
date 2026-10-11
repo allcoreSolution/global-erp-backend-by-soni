@@ -9,17 +9,17 @@ const {
   importEmployees 
 } = require('../controllers/employeeController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
-const upload = require('../middlewares/uploadMiddleware');
+const uploadEmployee = require('../middlewares/uploadEmployee');
 
 router.route('/')
-  .post(protect, checkPermission('manage_employees'), upload.single('profilePhoto'), createEmployee)
+  .post(protect, checkPermission('create_employees'), uploadEmployee.single('profilePhoto'), createEmployee)
   .get(protect, getEmployees);
 
-router.post('/import', protect, checkPermission('manage_employees'), importEmployees);
+router.post('/import', protect, checkPermission('create_employees'), importEmployees);
 
 router.route('/:id')
-  .get(protect, getEmployeeById)
-  .put(protect, checkPermission('manage_employees'), upload.single('profilePhoto'), updateEmployee)
-  .delete(protect, checkPermission('manage_employees'), deleteEmployee);
+  .get(protect, checkPermission('view_employees'), getEmployeeById)
+  .put(protect, checkPermission('edit_employees'), uploadEmployee.single('profilePhoto'), updateEmployee)
+  .delete(protect, checkPermission('delete_employees'), deleteEmployee);
 
 module.exports = router;

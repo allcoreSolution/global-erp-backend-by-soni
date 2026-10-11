@@ -22,6 +22,14 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Normalize duplicate leading slashes so //uploads and similar URLs never 404
+app.use((req, res, next) => {
+  if (req.url.startsWith('//')) {
+    req.url = req.url.replace(/^\/+/, '/');
+  }
+  next();
+});
+
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
@@ -177,7 +185,6 @@ app.use('/api/journal-vouchers', journalVoucherRoutes);
 // const hrmsRoutes = require('./src/routes/hrmsRoutes');
 // app.use('/api/hrms', hrmsRoutes);
 
-// Removed duplicate for Employee Routes
 
 // Salary Structure Routes
 const salaryStructureRoutes = require('./src/routes/salaryStructureRoutes');
@@ -196,8 +203,8 @@ const departmentRoutes = require('./src/routes/departmentRoutes');
 app.use('/api/departments', departmentRoutes);
 
 // Designation Routes
-const designationRoutes = require('./src/routes/designationRoutes');
-app.use('/api/designations', designationRoutes);
+// const designationRoutes = require('./src/routes/designationRoutes');
+// app.use('/api/designations', designationRoutes);
 
 // Shift Setup Routes
 const shiftSetupRoutes = require('./src/routes/shiftSetupRoutes');
@@ -249,6 +256,10 @@ app.use('/api/statutory', statutoryRoutes);
 const accountLedgerRoutes = require('./src/routes/accountLedgerRoutes');
 app.use('/api/account-ledgers', accountLedgerRoutes);
 
+// Account Group Routes
+const accountGroupRoutes = require('./src/routes/accountGroupRoutes');
+app.use('/api/account-groups', accountGroupRoutes);
+
 // Voucher Routes
 const voucherRoutes = require('./src/routes/voucherRoutes');
 app.use('/api/vouchers', voucherRoutes);
@@ -258,6 +269,9 @@ app.use('/api/reports/financial', financialReportRoutes);
 
 const analysisReportRoutes = require('./src/routes/analysisReportRoutes');
 app.use('/api/reports/analysis', analysisReportRoutes);
+
+const accountReportRoutes = require('./src/routes/accountReportRoutes');
+app.use('/api/reports/accounts', accountReportRoutes);
 
 // Customer Routes
 const customerRoutes = require('./src/routes/customerRoutes');

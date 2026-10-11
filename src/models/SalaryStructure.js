@@ -8,6 +8,11 @@ const componentSchema = new mongoose.Schema({
 });
 
 const salaryStructureSchema = new mongoose.Schema({
+  // Employee Link (Assign salary structure directly to an employee)
+  employee: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+  employeeId: { type: String, default: '' },
+  employeeName: { type: String, default: '' },
+
   // Basic Info
   code: { type: String, required: true, unique: true },
   name: { type: String, required: true },

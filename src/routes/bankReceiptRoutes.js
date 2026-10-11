@@ -10,12 +10,12 @@ const {
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
 router.route('/')
-  .post(protect, checkPermission('manage_finance'), createBankReceipt)
-  .get(protect, getBankReceipts);
+  .post(protect, checkPermission('create_bank_receipts'), createBankReceipt)
+  .get(protect, checkPermission('view_bank_receipts'), getBankReceipts);
 
 router.route('/:id')
-  .get(protect, getBankReceiptById)
-  .put(protect, checkPermission('manage_finance'), updateBankReceipt)
-  .delete(protect, checkPermission('manage_finance'), deleteBankReceipt);
+  .get(protect, checkPermission('view_bank_receipts'), getBankReceiptById)
+  .put(protect, checkPermission('edit_bank_receipts'), updateBankReceipt)
+  .delete(protect, checkPermission('delete_bank_receipts'), deleteBankReceipt);
 
 module.exports = router;

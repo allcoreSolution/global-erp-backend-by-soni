@@ -3,6 +3,7 @@ const router = express.Router();
 const { 
   addPurchase, 
   getPurchases, 
+  getPurchaseById,
   updatePurchase, 
   deletePurchase,
   importPurchase
@@ -14,10 +15,11 @@ router.route('/import')
 
 router.route('/')
   .post(protect, checkPermission('create_purchases'), addPurchase)
-  .get(protect, getPurchases);
+  .get(protect, checkPermission('view_purchases'), getPurchases);
 
 router.route('/:id')
-  .put(protect, checkPermission('create_purchases'), updatePurchase)
-  .delete(protect, checkPermission('create_purchases'), deletePurchase);
+  .get(protect, checkPermission('view_purchases'), getPurchaseById)
+  .put(protect, checkPermission('edit_purchases'), updatePurchase)
+  .delete(protect, checkPermission('delete_purchases'), deletePurchase);
 
 module.exports = router;

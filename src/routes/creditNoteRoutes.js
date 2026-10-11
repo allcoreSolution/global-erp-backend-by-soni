@@ -10,15 +10,15 @@ const {
 } = require('../controllers/creditNoteController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.route('/import').post(protect, importCreditNotes);
+router.route('/import').post(protect, checkPermission('create_credit_notes'), importCreditNotes);
 
 router.route('/')
-  .post(protect, checkPermission('manage_sales'), createCreditNote)
-  .get(protect, getCreditNotes);
+  .post(protect, checkPermission('create_credit_notes'), createCreditNote)
+  .get(protect, checkPermission('view_credit_notes'), getCreditNotes);
 
 router.route('/:id')
-  .get(protect, getCreditNoteById)
-  .put(protect, checkPermission('manage_sales'), updateCreditNote)
-  .delete(protect, checkPermission('manage_sales'), deleteCreditNote);
+  .get(protect, checkPermission('view_credit_notes'), getCreditNoteById)
+  .put(protect, checkPermission('edit_credit_notes'), updateCreditNote)
+  .delete(protect, checkPermission('delete_credit_notes'), deleteCreditNote);
 
 module.exports = router;

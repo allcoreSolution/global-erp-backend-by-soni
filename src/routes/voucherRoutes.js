@@ -12,13 +12,13 @@ const {
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
 // Statement/Report endpoints must come before /:id
-router.get('/statement', protect, checkPermission('manage_hrms'), getLedgerStatement);
-router.post('/import', protect, checkPermission('manage_hrms'), importVouchers);
+router.get('/statement', protect, checkPermission('view_vouchers'), getLedgerStatement);
+router.post('/import', protect, checkPermission('create_vouchers'), importVouchers);
 
-router.post('/', protect, checkPermission('manage_hrms'), createVoucher);
-router.get('/', protect, checkPermission('manage_hrms'), getVouchers);
-router.get('/:id', protect, checkPermission('manage_hrms'), getVoucherById);
-router.put('/:id', protect, checkPermission('manage_hrms'), updateVoucher);
-router.delete('/:id', protect, checkPermission('manage_hrms'), deleteVoucher);
+router.post('/', protect, checkPermission('create_vouchers'), createVoucher);
+router.get('/', protect, checkPermission('view_vouchers'), getVouchers);
+router.get('/:id', protect, checkPermission('view_vouchers'), getVoucherById);
+router.put('/:id', protect, checkPermission('edit_vouchers'), updateVoucher);
+router.delete('/:id', protect, checkPermission('delete_vouchers'), deleteVoucher);
 
 module.exports = router;
