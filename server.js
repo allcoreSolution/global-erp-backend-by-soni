@@ -276,10 +276,6 @@ app.use('/api/statutory', statutoryRoutes);
 const accountLedgerRoutes = require('./src/routes/accountLedgerRoutes');
 app.use('/api/account-ledgers', accountLedgerRoutes);
 
-// Account Group Routes
-const accountGroupRoutes = require('./src/routes/accountGroupRoutes');
-app.use('/api/account-groups', accountGroupRoutes);
-
 // Voucher Routes
 const voucherRoutes = require('./src/routes/voucherRoutes');
 app.use('/api/vouchers', voucherRoutes);
