@@ -6,9 +6,14 @@ const {
   getSupplierById,
   updateSupplier,
   patchSupplier,
-  deleteSupplier
+  deleteSupplier,
+  getSuppliersLedgerSummary,
+  getSupplierLedgerDetails
 } = require('../controllers/supplierController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
+
+router.get('/ledger/summary', protect, checkPermission('view_suppliers'), getSuppliersLedgerSummary);
+router.get('/:id/ledger', protect, checkPermission('view_suppliers'), getSupplierLedgerDetails);
 
 router.get('/', protect, checkPermission('view_suppliers'), getSuppliers);
 router.get('/:id', protect, checkPermission('view_suppliers'), getSupplierById);

@@ -186,10 +186,12 @@ const addPurchase = async (req, res, next) => {
 // ─────────────────────────────────────────────────────
 const getPurchases = async (req, res, next) => {
   try {
-    const { supplierName, branchName } = req.query;
+    const { supplierName, branchName, supplier } = req.query;
     let filter = {};
 
-    if (supplierName) {
+    if (supplier) {
+      filter.supplier = supplier;
+    } else if (supplierName) {
       const { Supplier } = require('../models/Supplier');
       const supplierDoc = await Supplier.findOne({ companyName: supplierName });
       if (supplierDoc) {
