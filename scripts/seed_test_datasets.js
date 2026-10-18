@@ -584,7 +584,7 @@ async function seed() {
   if (defaultCompany && defaultBranch && defaultWarehouse) {
     console.log('\n--- Injected into Active Company (' + defaultCompany.name + ') for instant browser test ---');
     
-    // Injected Suppliers
+    // Injected Suppliers: Only Prime Furniture Traders & Prime Pharma Laboratories
     const liveSup1 = await Supplier.findOneAndUpdate(
       { supplierCode: 'SUP-LIVE-001' },
       {
@@ -603,24 +603,6 @@ async function seed() {
       { upsert: true, returnDocument: 'after' }
     );
 
-    const liveSup2 = await Supplier.findOneAndUpdate(
-      { supplierCode: 'SUP-LIVE-002' },
-      {
-        supplierCode: 'SUP-LIVE-002',
-        companyName: 'Modern Office Products',
-        contactPerson: 'Suresh Verma',
-        phone: '9876533002',
-        email: 'sales@modernoffice.com',
-        gstin: '09BBBBM4444B1Z4',
-        paymentTerms: 'Net 30',
-        creditLimit: 150000,
-        balance: 21920,
-        company: defaultCompany._id,
-        billingAddress: { city: 'Kanpur', state: 'Uttar Pradesh', country: 'India' }
-      },
-      { upsert: true, returnDocument: 'after' }
-    );
-
     const liveSup3 = await Supplier.findOneAndUpdate(
       { supplierCode: 'SUP-LIVE-003' },
       {
@@ -635,24 +617,6 @@ async function seed() {
         balance: 38000,
         company: defaultCompany._id,
         billingAddress: { city: 'Lucknow', state: 'Uttar Pradesh', country: 'India' }
-      },
-      { upsert: true, returnDocument: 'after' }
-    );
-
-    const liveSup4 = await Supplier.findOneAndUpdate(
-      { supplierCode: 'SUP-LIVE-004' },
-      {
-        supplierCode: 'SUP-LIVE-004',
-        companyName: 'Modern Healthcare Distributors',
-        contactPerson: 'Anil Gupta',
-        phone: '9876511002',
-        email: 'sales@modernhealthcare.com',
-        gstin: '09AAACM2222A1Z2',
-        paymentTerms: 'Net 30',
-        creditLimit: 150000,
-        balance: 21920,
-        company: defaultCompany._id,
-        billingAddress: { city: 'Kanpur', state: 'Uttar Pradesh', country: 'India' }
       },
       { upsert: true, returnDocument: 'after' }
     );
@@ -686,33 +650,6 @@ async function seed() {
     );
 
     await Purchase.findOneAndUpdate(
-      { purchaseNo: 'PUR-LIVE-MOP-001' },
-      {
-        purchaseDate: '2026-04-06',
-        referenceNo: 'MOP-001',
-        purchaseNo: 'PUR-LIVE-MOP-001',
-        company: defaultCompany._id,
-        branch: defaultBranch._id,
-        warehouse: defaultWarehouse._id,
-        supplier: liveSup2._id,
-        purchaseStatus: 'Received',
-        paymentStatus: 'Partial',
-        grandTotal: 64900,
-        amountPaid: 30000,
-        orderTax: '18%',
-        orderItems: [{
-          name: 'Office Chair - Model A',
-          code: 'CHAIR-A',
-          quantity: 50,
-          netUnitCost: 1100,
-          taxPercent: 18,
-          productPrice: 1600
-        }]
-      },
-      { upsert: true, returnDocument: 'after' }
-    );
-
-    await Purchase.findOneAndUpdate(
       { purchaseNo: 'PUR-LIVE-PPL-001' },
       {
         purchaseDate: '2026-04-04',
@@ -734,33 +671,6 @@ async function seed() {
           netUnitCost: 1000,
           taxPercent: 18,
           productPrice: 1500
-        }]
-      },
-      { upsert: true, returnDocument: 'after' }
-    );
-
-    await Purchase.findOneAndUpdate(
-      { purchaseNo: 'PUR-LIVE-MHD-001' },
-      {
-        purchaseDate: '2026-04-06',
-        referenceNo: 'MHD-001',
-        purchaseNo: 'PUR-LIVE-MHD-001',
-        company: defaultCompany._id,
-        branch: defaultBranch._id,
-        warehouse: defaultWarehouse._id,
-        supplier: liveSup4._id,
-        purchaseStatus: 'Received',
-        paymentStatus: 'Partial',
-        grandTotal: 64900,
-        amountPaid: 30000,
-        orderTax: '18%',
-        orderItems: [{
-          name: 'Pharma Tablet A - Demo',
-          code: 'PT-A',
-          quantity: 50,
-          netUnitCost: 1100,
-          taxPercent: 18,
-          productPrice: 1600
         }]
       },
       { upsert: true, returnDocument: 'after' }
