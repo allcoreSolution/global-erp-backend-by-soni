@@ -1,4 +1,5 @@
 const { Contra } = require('../models/Contra');
+const AccountLedger = require('../models/AccountLedger');
 
 // @desc    Create a new Contra Entry
 // @route   POST /api/contras
@@ -9,6 +10,25 @@ const createContra = async (req, res, next) => {
       ...req.body,
       company: req.user?.companyId || req.body.company
     });
+
+    const amount = Number(req.body.amount) || 0;
+    const bankCharges = Number(req.body.bankCharges) || 0;
+
+    // Debit fromAccount (balance ghata do - paisa wahan se gaya)
+    if (req.body.fromAccount) {
+      await AccountLedger.findOneAndUpdate(
+        { accountName: req.body.fromAccount },
+        { $inc: { openingBalance: -(amount + bankCharges) } }
+      );
+    }
+
+    // Credit toAccount (balance badha do - paisa wahan aaya)
+    if (req.body.toAccount) {
+      await AccountLedger.findOneAndUpdate(
+        { accountName: req.body.toAccount },
+        { $inc: { openingBalance: amount } }
+      );
+    }
 
     res.status(201).json({ success: true, data: newContra });
   } catch (error) {

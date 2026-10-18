@@ -9,10 +9,10 @@ const {
 } = require('../controllers/holidayController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.post('/', protect, checkPermission('manage_hrms'), addHoliday);
-router.get('/', protect, checkPermission('manage_hrms'), getHolidays);
-router.get('/:id', protect, checkPermission('manage_hrms'), getHolidayById);
-router.put('/:id', protect, checkPermission('manage_hrms'), updateHoliday);
-router.delete('/:id', protect, checkPermission('manage_hrms'), deleteHoliday);
+router.post('/', protect, checkPermission('create_holidays'), addHoliday);
+router.get('/', protect, checkPermission('view_holidays'), getHolidays);
+router.get('/:id', protect, checkPermission('view_holidays'), getHolidayById);
+router.put('/:id', protect, checkPermission('edit_holidays'), updateHoliday);
+router.delete('/:id', protect, checkPermission('delete_holidays'), deleteHoliday);
 
 module.exports = router;

@@ -21,8 +21,9 @@ const createSalaryStructure = async (req, res, next) => {
 // @access  Private
 const getSalaryStructures = async (req, res, next) => {
   try {
-    const query = req.user?.companyId ? { company: req.user.companyId } : {};
-    const salaryStructures = await SalaryStructure.find(query);
+    const companyId = req.user?.company || req.user?.companyId;
+    const query = companyId ? { $or: [{ company: companyId }, { company: null }, { company: '' }] } : {};
+    const salaryStructures = await SalaryStructure.find(query).populate('employee', 'employeeName employeeId department designation branch');
     res.json({ success: true, data: salaryStructures });
   } catch (error) {
     next(error);

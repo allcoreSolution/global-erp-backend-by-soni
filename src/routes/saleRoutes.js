@@ -9,10 +9,10 @@ const {
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
 // Sales Routes
-router.get('/', protect, getSales);
+router.get('/', protect, checkPermission('view_sales'), getSales);
 router.post('/', protect, checkPermission('create_sales'), createSale);
-router.put('/:id', protect, checkPermission('create_sales'), updateSale);
-router.delete('/:id', protect, checkPermission('create_sales'), deleteSale);
+router.put('/:id', protect, checkPermission('edit_sales'), updateSale);
+router.delete('/:id', protect, checkPermission('delete_sales'), deleteSale);
 
 
 module.exports = router;

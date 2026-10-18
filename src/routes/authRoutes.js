@@ -4,20 +4,22 @@ const {
   registerUser,
   loginUser,
   getUserProfile,
-  getRoles,
-  createOrUpdateRole
+  updateUserProfile,
+  changePassword
 } = require('../controllers/authController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
+const uploadEmployee = require('../middlewares/uploadEmployee');
 
 // Public route
+// Login
 router.post('/login', loginUser);
 
 // Protected routes
 router.get('/profile', protect, getUserProfile);
+router.put('/profile', protect, uploadEmployee.single('profilePhoto'), updateUserProfile);
+router.put('/change-password', protect, changePassword);
 
 // Permission based routes
-router.post('/register', protect, checkPermission('manage_users'), registerUser);
-router.get('/roles', protect, checkPermission('manage_roles'), getRoles);
-router.post('/roles', protect, checkPermission('manage_roles'), createOrUpdateRole);
+router.post('/register', protect, checkPermission('create_users'), registerUser);
 
 module.exports = router;

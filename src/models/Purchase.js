@@ -44,6 +44,7 @@ const purchaseSchema = new mongoose.Schema({
   discountValue: { type: Number, default: 0 },
   shippingCost: { type: Number, default: 0 },
   grandTotal: { type: Number, default: 0 },
+  amountPaid: { type: Number, default: 0 },
   note: { type: String, default: '' },
 
 }, { timestamps: true });

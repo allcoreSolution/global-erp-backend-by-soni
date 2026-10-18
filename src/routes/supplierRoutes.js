@@ -10,11 +10,11 @@ const {
 } = require('../controllers/supplierController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.get('/', protect, getSuppliers);
-router.get('/:id', protect, getSupplierById);
-router.post('/', protect, checkPermission('manage_stock'), createSupplier);
-router.put('/:id', protect, checkPermission('manage_stock'), updateSupplier);
-router.patch('/:id', protect, checkPermission('manage_stock'), patchSupplier);
-router.delete('/:id', protect, checkPermission('manage_stock'), deleteSupplier);
+router.get('/', protect, checkPermission('view_suppliers'), getSuppliers);
+router.get('/:id', protect, checkPermission('view_suppliers'), getSupplierById);
+router.post('/', protect, checkPermission('create_suppliers'), createSupplier);
+router.put('/:id', protect, checkPermission('edit_suppliers'), updateSupplier);
+router.patch('/:id', protect, checkPermission('edit_suppliers'), patchSupplier);
+router.delete('/:id', protect, checkPermission('delete_suppliers'), deleteSupplier);
 
 module.exports = router;

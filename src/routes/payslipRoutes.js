@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const {
   generatePayslipPreview,
+  generateMonthlyBulkPayroll,
+  updatePayslipStatus,
+  completeAllPayslips,
   createPayslip,
   getPayslips,
   getPayslipById,
@@ -9,10 +12,13 @@ const {
 } = require('../controllers/payslipController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.get('/preview', protect, checkPermission('manage_hrms'), generatePayslipPreview);
-router.post('/', protect, checkPermission('manage_hrms'), createPayslip);
-router.get('/', protect, checkPermission('manage_hrms'), getPayslips);
-router.get('/:id', protect, checkPermission('manage_hrms'), getPayslipById);
-router.delete('/:id', protect, checkPermission('manage_hrms'), deletePayslip);
+router.get('/preview', protect, checkPermission('view_payslips'), generatePayslipPreview);
+router.post('/bulk-generate', protect, checkPermission(['create_payslips', 'manage_hrms', 'admin']), generateMonthlyBulkPayroll);
+router.put('/complete-all', protect, checkPermission(['edit_payslips', 'manage_hrms', 'admin']), completeAllPayslips);
+router.put('/:id/status', protect, checkPermission(['edit_payslips', 'manage_hrms', 'admin']), updatePayslipStatus);
+router.post('/', protect, checkPermission('create_payslips'), createPayslip);
+router.get('/', protect, checkPermission('view_payslips'), getPayslips);
+router.get('/:id', protect, checkPermission('view_payslips'), getPayslipById);
+router.delete('/:id', protect, checkPermission('delete_payslips'), deletePayslip);
 
 module.exports = router;

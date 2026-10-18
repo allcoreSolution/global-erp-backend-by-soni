@@ -1,6 +1,6 @@
 const { getContext } = require('../middlewares/tenantContext');
 
-const GLOBAL_MODELS = ['Company', 'User', 'Role']; // Models to skip for tenant isolation
+const GLOBAL_MODELS = ['Company', 'User', 'Role', 'Notification', 'SupportTicket']; // Models to skip for tenant isolation
 
 const tenantPlugin = (schema, options) => {
   // We only want to hook into models that actually have a company field

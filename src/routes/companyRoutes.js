@@ -6,7 +6,13 @@ const {
   getCompanies, 
   updateSubscription, 
   getMyCompanyProfile, 
-  updateCompanyProfile
+  updateCompanyProfile,
+  deleteCompany,
+  toggleCompanyStatus,
+  updateCompany,
+  getCompanyById,
+  getSubscriptions,
+  renewSubscription
 } = require('../controllers/companyController');
 
 // Middleware for SuperAdmin
@@ -24,9 +30,17 @@ router.use(protect);
 router.get('/profile', getMyCompanyProfile);
 router.put('/profile', updateCompanyProfile);
 
-// Super Admin Routes
+// Super Admin Routes (Register & Subscription management)
 router.post('/register', superAdminOnly, registerCompany);
-router.get('/', superAdminOnly, getCompanies);
+router.get('/subscriptions', superAdminOnly, getSubscriptions);
 router.put('/:id/subscription', superAdminOnly, updateSubscription);
+router.post('/:id/renew', superAdminOnly, renewSubscription);
+router.get('/:id', superAdminOnly, getCompanyById);
+router.put('/:id', superAdminOnly, updateCompany);
+router.delete('/:id', superAdminOnly, deleteCompany);
+router.patch('/:id/status', superAdminOnly, toggleCompanyStatus);
+
+// Companies list (SuperAdmin gets all; other users can read for branch/warehouse company dropdowns)
+router.get('/', getCompanies);
 
 module.exports = router;

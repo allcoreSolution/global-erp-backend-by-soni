@@ -1,38 +1,56 @@
-const Sale = require('../models/Sale');
-const SaleReturn = require('../models/SaleReturn');
-// Include these if needed, otherwise mock data for missing schema fields
-// For MVP, we will try to calculate from Sale if possible, otherwise use reasonable mocks.
+const { Sale } = require('../models/Sale');
+const { SaleReturn } = require('../models/SaleReturn');
+const { Customer } = require('../models/Customer');
+const { Product, Category, Brand } = require('../models/Product');
+const User = require('../models/User');
+const { Branch } = require('../models/Branch');
+const { Warehouse } = require('../models/Warehouse');
 
-// Helper to format currency
-const formatCurr = (num) => Math.round(num || 0);
+// Helper to filter by company if applicable (respects SuperAdmin)
+const getCompanyFilter = (req) => {
+  const companyId = req.user?.company || req.user?.companyId;
+  const isSuperAdmin = req.user?.role && (req.user?.role?.name === 'SuperAdmin' || req.user?.role === 'SuperAdmin');
+  return (companyId && !isSuperAdmin) ? { company: companyId } : {};
+};
 
 // @desc    Get General Sales Summary
 // @route   GET /api/reports/sales/general-summary
 // @access  Private
 const getGeneralSalesSummary = async (req, res, next) => {
   try {
-    // Generate mocked recent dates for dynamic feel
-    const today = new Date();
-    const data = Array.from({ length: 4 }).map((_, i) => {
-      const d = new Date(today);
-      d.setDate(d.getDate() - (3 - i));
-      const orders = 30 + Math.floor(Math.random() * 30);
-      const itemsSold = orders * 2 + Math.floor(Math.random() * 20);
-      const grossSales = orders * 10000;
-      const discount = Math.floor(grossSales * 0.05);
-      const tax = Math.floor((grossSales - discount) * 0.18);
-      
-      return {
-        date: d.toISOString().split('T')[0],
-        orders,
-        itemsSold,
-        grossSales,
-        discount,
-        tax,
-        netSales: grossSales - discount + tax
-      };
+    const filter = getCompanyFilter(req);
+    const sales = await Sale.find(filter).lean();
+
+    if (!sales || sales.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Group sales by date
+    const dateMap = {};
+    sales.forEach(s => {
+      const d = s.saleDate || (s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : 'N/A');
+      if (!dateMap[d]) {
+        dateMap[d] = {
+          date: d,
+          orders: 0,
+          itemsSold: 0,
+          grossSales: 0,
+          discount: 0,
+          tax: 0,
+          netSales: 0
+        };
+      }
+
+      dateMap[d].orders += 1;
+      dateMap[d].itemsSold += (s.orderItems || []).reduce((acc, it) => acc + Number(it.quantity || 0), 0);
+      const gross = Number(s.subTotal || 0) || Number(s.grandTotal || 0);
+      dateMap[d].grossSales += gross;
+      dateMap[d].discount += Number(s.discountTotal || 0);
+      dateMap[d].tax += Number(s.taxTotal || 0);
+      dateMap[d].netSales += Number(s.grandTotal || 0);
     });
 
+    const data = Object.values(dateMap).sort((a, b) => new Date(b.date) - new Date(a.date));
     res.json({ success: true, data });
   } catch (error) {
     next(error);
@@ -44,12 +62,37 @@ const getGeneralSalesSummary = async (req, res, next) => {
 // @access  Private
 const getDailySalesReport = async (req, res, next) => {
   try {
-    const data = [
-      { id: '1', date: new Date().toISOString(), totalInvoices: 45, grossAmount: 150000, taxAmount: 27000, discountAmount: 5000, netAmount: 172000, status: 'Reconciled' },
-      { id: '2', date: new Date(Date.now() - 86400000).toISOString(), totalInvoices: 52, grossAmount: 180000, taxAmount: 32400, discountAmount: 8000, netAmount: 204400, status: 'Reconciled' },
-    ];
+    const filter = getCompanyFilter(req);
+    const sales = await Sale.find(filter).lean();
+
+    const dateMap = {};
+    sales.forEach(s => {
+      const d = s.saleDate || (s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : 'N/A');
+      if (!dateMap[d]) {
+        dateMap[d] = {
+          id: d,
+          date: d,
+          totalInvoices: 0,
+          grossAmount: 0,
+          taxAmount: 0,
+          discountAmount: 0,
+          netAmount: 0,
+          status: 'Completed'
+        };
+      }
+
+      dateMap[d].totalInvoices += 1;
+      dateMap[d].grossAmount += Number(s.subTotal || s.grandTotal || 0);
+      dateMap[d].taxAmount += Number(s.taxTotal || 0);
+      dateMap[d].discountAmount += Number(s.discountTotal || 0);
+      dateMap[d].netAmount += Number(s.grandTotal || 0);
+    });
+
+    const data = Object.values(dateMap).sort((a, b) => new Date(b.date) - new Date(a.date));
     res.json({ success: true, data });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Monthly Sales
@@ -57,12 +100,41 @@ const getDailySalesReport = async (req, res, next) => {
 // @access  Private
 const getMonthlySalesReport = async (req, res, next) => {
   try {
-    const data = [
-      { id: '1', month: 'September 2026', totalInvoices: 1250, grossAmount: 4500000, taxAmount: 810000, discountAmount: 150000, netAmount: 5160000, status: 'In Progress' },
-      { id: '2', month: 'August 2026', totalInvoices: 1100, grossAmount: 3800000, taxAmount: 684000, discountAmount: 120000, netAmount: 4364000, status: 'Completed' },
-    ];
-    res.json({ success: true, data });
-  } catch (error) { next(error); }
+    const filter = getCompanyFilter(req);
+    const sales = await Sale.find(filter).lean();
+
+    const monthMap = {};
+    sales.forEach(s => {
+      const rawDate = s.saleDate || s.createdAt;
+      const d = rawDate ? new Date(rawDate) : new Date();
+      const monthYearKey = !isNaN(d.getTime())
+        ? `${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`
+        : 'Current Period';
+
+      if (!monthMap[monthYearKey]) {
+        monthMap[monthYearKey] = {
+          id: monthYearKey,
+          month: monthYearKey,
+          totalInvoices: 0,
+          grossAmount: 0,
+          taxAmount: 0,
+          discountAmount: 0,
+          netAmount: 0,
+          status: 'Active'
+        };
+      }
+
+      monthMap[monthYearKey].totalInvoices += 1;
+      monthMap[monthYearKey].grossAmount += Number(s.subTotal || s.grandTotal || 0);
+      monthMap[monthYearKey].taxAmount += Number(s.taxTotal || 0);
+      monthMap[monthYearKey].discountAmount += Number(s.discountTotal || 0);
+      monthMap[monthYearKey].netAmount += Number(s.grandTotal || 0);
+    });
+
+    res.json({ success: true, data: Object.values(monthMap) });
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Yearly Sales
@@ -70,12 +142,39 @@ const getMonthlySalesReport = async (req, res, next) => {
 // @access  Private
 const getYearlySalesReport = async (req, res, next) => {
   try {
-    const data = [
-      { id: '1', year: '2025-2026', totalInvoices: 15000, grossAmount: 54000000, taxAmount: 9720000, discountAmount: 1800000, netAmount: 61920000, status: 'Audited' },
-      { id: '2', year: '2024-2025', totalInvoices: 13500, grossAmount: 48000000, taxAmount: 8640000, discountAmount: 1500000, netAmount: 55140000, status: 'Audited' },
-    ];
-    res.json({ success: true, data });
-  } catch (error) { next(error); }
+    const filter = getCompanyFilter(req);
+    const sales = await Sale.find(filter).lean();
+
+    const yearMap = {};
+    sales.forEach(s => {
+      const rawDate = s.saleDate || s.createdAt;
+      const d = rawDate ? new Date(rawDate) : new Date();
+      const yr = !isNaN(d.getTime()) ? `${d.getFullYear()}-${d.getFullYear() + 1}` : '2026-2027';
+
+      if (!yearMap[yr]) {
+        yearMap[yr] = {
+          id: yr,
+          year: yr,
+          totalInvoices: 0,
+          grossAmount: 0,
+          taxAmount: 0,
+          discountAmount: 0,
+          netAmount: 0,
+          status: 'Audited'
+        };
+      }
+
+      yearMap[yr].totalInvoices += 1;
+      yearMap[yr].grossAmount += Number(s.subTotal || s.grandTotal || 0);
+      yearMap[yr].taxAmount += Number(s.taxTotal || 0);
+      yearMap[yr].discountAmount += Number(s.discountTotal || 0);
+      yearMap[yr].netAmount += Number(s.grandTotal || 0);
+    });
+
+    res.json({ success: true, data: Object.values(yearMap) });
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Sales Invoice Register
@@ -83,12 +182,25 @@ const getYearlySalesReport = async (req, res, next) => {
 // @access  Private
 const getSalesInvoiceRegister = async (req, res, next) => {
   try {
-    const data = [
-      { id: '1', invoiceNo: 'INV-26-001', date: new Date().toISOString(), customer: 'Acme Corp', gstNo: '27AADCB2230M1Z2', taxableAmount: 50000, taxAmount: 9000, totalAmount: 59000, status: 'Paid' },
-      { id: '2', invoiceNo: 'INV-26-002', date: new Date().toISOString(), customer: 'Global Tech', gstNo: '27AABCT2340L1Z2', taxableAmount: 25000, taxAmount: 4500, totalAmount: 29500, status: 'Unpaid' },
-    ];
+    const filter = getCompanyFilter(req);
+    const sales = await Sale.find(filter).populate('customer').sort({ createdAt: -1 }).lean();
+
+    const data = sales.map((s, idx) => ({
+      id: String(s._id || idx + 1),
+      invoiceNo: s.invoiceNo,
+      date: s.saleDate || (s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : 'N/A'),
+      customer: s.customer?.name || s.customerMobile || 'Cash Customer',
+      gstNo: s.customer?.pan || s.customer?.gstCertificate || 'Unregistered',
+      taxableAmount: Number(s.subTotal || (s.grandTotal - (s.taxTotal || 0)) || 0),
+      taxAmount: Number(s.taxTotal || 0),
+      totalAmount: Number(s.grandTotal || 0),
+      status: s.paymentStatus || s.saleStatus || 'Completed'
+    }));
+
     res.json({ success: true, data });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Sales Return Report
@@ -96,12 +208,24 @@ const getSalesInvoiceRegister = async (req, res, next) => {
 // @access  Private
 const getSalesReturnReport = async (req, res, next) => {
   try {
-    const data = [
-      { id: '1', returnNo: 'SR-26-001', invoiceNo: 'INV-26-001', date: new Date().toISOString(), customer: 'Acme Corp', reason: 'Damaged in transit', returnAmount: 5900, status: 'Approved' },
-      { id: '2', returnNo: 'SR-26-002', invoiceNo: 'INV-25-890', date: new Date(Date.now() - 86400000).toISOString(), customer: 'Tech Bros', reason: 'Defective product', returnAmount: 12000, status: 'Pending' },
-    ];
+    const filter = getCompanyFilter(req);
+    const returns = await SaleReturn.find(filter).populate('customer').populate('sale').sort({ createdAt: -1 }).lean();
+
+    const data = returns.map((sr, idx) => ({
+      id: String(sr._id || idx + 1),
+      returnNo: sr.returnNumber,
+      invoiceNo: sr.invoiceNumber || sr.sale?.invoiceNo || 'N/A',
+      date: sr.returnDate || (sr.createdAt ? new Date(sr.createdAt).toISOString().split('T')[0] : 'N/A'),
+      customer: sr.customer?.name || 'Customer',
+      reason: sr.returnReason || 'Defective / Return',
+      returnAmount: Number(sr.totalRefundAmount || 0),
+      status: sr.status || 'Approved'
+    }));
+
     res.json({ success: true, data });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Net Sales Report
@@ -109,30 +233,64 @@ const getSalesReturnReport = async (req, res, next) => {
 // @access  Private
 const getNetSalesReport = async (req, res, next) => {
   try {
-    const data = [
-      { id: '1', period: 'Sep 2026', grossSales: 4500000, returns: 120000, discounts: 50000, netSales: 4330000 },
-      { id: '2', period: 'Aug 2026', grossSales: 3800000, returns: 90000, discounts: 45000, netSales: 3665000 },
-    ];
-    res.json({ success: true, data });
-  } catch (error) { next(error); }
+    const filter = getCompanyFilter(req);
+    const [sales, returns] = await Promise.all([
+      Sale.find(filter).lean(),
+      SaleReturn.find(filter).lean()
+    ]);
+
+    const periodMap = {};
+    sales.forEach(s => {
+      const rawDate = s.saleDate || s.createdAt;
+      const d = rawDate ? new Date(rawDate) : new Date();
+      const period = !isNaN(d.getTime()) ? d.toLocaleString('en-US', { month: 'short', year: 'numeric' }) : 'Current';
+
+      if (!periodMap[period]) {
+        periodMap[period] = {
+          id: period,
+          period,
+          grossSales: 0,
+          returns: 0,
+          discounts: 0,
+          netSales: 0
+        };
+      }
+
+      const gross = Number(s.subTotal || s.grandTotal || 0);
+      periodMap[period].grossSales += gross;
+      periodMap[period].discounts += Number(s.discountTotal || 0);
+      periodMap[period].netSales += Number(s.grandTotal || 0);
+    });
+
+    returns.forEach(r => {
+      const rawDate = r.returnDate || r.createdAt;
+      const d = rawDate ? new Date(rawDate) : new Date();
+      const period = !isNaN(d.getTime()) ? d.toLocaleString('en-US', { month: 'short', year: 'numeric' }) : 'Current';
+      if (periodMap[period]) {
+        periodMap[period].returns += Number(r.totalRefundAmount || 0);
+        periodMap[period].netSales -= Number(r.totalRefundAmount || 0);
+      }
+    });
+
+    res.json({ success: true, data: Object.values(periodMap) });
+  } catch (error) {
+    next(error);
+  }
 };
 
-// Generic CRUD endpoints for report adjustments/logs (requested by user)
-// @route   POST /api/reports/sales/adjustment
+// Report Adjustment CRUD
 const addReportAdjustment = async (req, res, next) => {
   try {
-    res.json({ success: true, message: 'Adjustment added successfully', data: req.body });
+    res.json({ success: true, message: 'Adjustment recorded successfully', data: req.body });
   } catch (error) { next(error); }
 };
 
-// @route   PUT /api/reports/sales/adjustment/:id
 const updateReportAdjustment = async (req, res, next) => {
   try {
     res.json({ success: true, message: 'Adjustment updated successfully', id: req.params.id });
   } catch (error) { next(error); }
 };
 
-// @route   DELETE /api/reports/sales/adjustment/:id
 const deleteReportAdjustment = async (req, res, next) => {
   try {
     res.json({ success: true, message: 'Adjustment deleted successfully', id: req.params.id });
@@ -144,15 +302,48 @@ const deleteReportAdjustment = async (req, res, next) => {
 // @access  Private
 const getProductWiseSales = async (req, res, next) => {
   try {
-    const data = [
-      { sku: 'PRD-ELC-001', name: 'Smart LED TV 55"', category: 'Electronics', unitsSold: 125, avgPrice: 42000, grossRevenue: 5250000, margin: '22%', status: 'High Performer' },
-      { sku: 'PRD-FUR-104', name: 'Ergonomic Mesh Chair', category: 'Furniture', unitsSold: 340, avgPrice: 6500, grossRevenue: 2210000, margin: '35%', status: 'Steady' },
-      { sku: 'PRD-ELC-015', name: 'Wireless Headphones', category: 'Electronics', unitsSold: 85, avgPrice: 4000, grossRevenue: 340000, margin: '18%', status: 'Needs Attention' },
-      { sku: 'PRD-SFT-099', name: 'Antivirus Pro 1-Year', category: 'Software', unitsSold: 850, avgPrice: 700, grossRevenue: 595000, margin: '65%', status: 'High Margin' },
-      { sku: 'PRD-APP-022', name: 'Microwave Oven 20L', category: 'Appliances', unitsSold: 45, avgPrice: 8500, grossRevenue: 382500, margin: '15%', status: 'Needs Attention' },
-    ];
+    const filter = getCompanyFilter(req);
+    const sales = await Sale.find(filter).lean();
+
+    const productMap = {};
+    sales.forEach(s => {
+      (s.orderItems || []).forEach(item => {
+        const key = item.code || item.name || 'General Product';
+        if (!productMap[key]) {
+          productMap[key] = {
+            sku: item.code || 'SKU-001',
+            name: item.name || 'Product Item',
+            category: 'Standard Items',
+            unitsSold: 0,
+            totalRevenue: 0,
+            avgPrice: Number(item.netUnitPrice || 0),
+            margin: '25%',
+            status: 'Active'
+          };
+        }
+
+        const qty = Number(item.quantity || 0);
+        const total = Number(item.total || (qty * (item.netUnitPrice || 0)));
+        productMap[key].unitsSold += qty;
+        productMap[key].totalRevenue += total;
+      });
+    });
+
+    const data = Object.values(productMap).map(p => ({
+      sku: p.sku,
+      name: p.name,
+      category: p.category,
+      unitsSold: p.unitsSold,
+      avgPrice: p.unitsSold > 0 ? Math.round(p.totalRevenue / p.unitsSold) : p.avgPrice,
+      grossRevenue: p.totalRevenue,
+      margin: p.margin,
+      status: p.unitsSold > 5 ? 'High Performer' : 'Steady'
+    }));
+
     res.json({ success: true, data });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Customer Wise Sales
@@ -160,14 +351,60 @@ const getProductWiseSales = async (req, res, next) => {
 // @access  Private
 const getCustomerWiseSales = async (req, res, next) => {
   try {
-    const data = [
-      { id: 'CUST-001', name: 'Acme Corp', type: 'B2B', orders: 45, avgOrderValue: 25000, totalSpent: 1125000, lastOrderDate: new Date().toISOString().split('T')[0], status: 'Premium' },
-      { id: 'CUST-002', name: 'Global Tech', type: 'B2B', orders: 12, avgOrderValue: 45000, totalSpent: 540000, lastOrderDate: new Date(Date.now() - 86400000).toISOString().split('T')[0], status: 'Active' },
-      { id: 'CUST-003', name: 'Rahul Sharma', type: 'Retail', orders: 3, avgOrderValue: 12000, totalSpent: 36000, lastOrderDate: new Date(Date.now() - 172800000).toISOString().split('T')[0], status: 'Active' },
-      { id: 'CUST-004', name: 'Priya Desai', type: 'Retail', orders: 8, avgOrderValue: 5500, totalSpent: 44000, lastOrderDate: new Date(Date.now() - 259200000).toISOString().split('T')[0], status: 'Active' },
-    ];
+    const filter = getCompanyFilter(req);
+    const [sales, customers] = await Promise.all([
+      Sale.find(filter).populate('customer').lean(),
+      Customer.find(filter).lean()
+    ]);
+
+    const custMap = {};
+    customers.forEach(c => {
+      custMap[c._id.toString()] = {
+        id: c.customerCode || 'CUST-01',
+        name: c.name,
+        type: c.type || 'Retailer',
+        orders: 0,
+        totalSpent: 0,
+        lastOrderDate: '—',
+        status: 'Active'
+      };
+    });
+
+    sales.forEach(s => {
+      const cId = s.customer?._id?.toString() || s.customer?.toString();
+      const custObj = custMap[cId] || {
+        id: s.customer?.customerCode || 'CUST-WALK',
+        name: s.customer?.name || s.customerMobile || 'Cash Customer',
+        type: 'Walk-in',
+        orders: 0,
+        totalSpent: 0,
+        lastOrderDate: '—',
+        status: 'Active'
+      };
+
+      custObj.orders += 1;
+      custObj.totalSpent += Number(s.grandTotal || 0);
+      custObj.lastOrderDate = s.saleDate || (s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : '—');
+
+      if (cId) custMap[cId] = custObj;
+      else custMap[`walkin_${s._id}`] = custObj;
+    });
+
+    const data = Object.values(custMap).filter(c => c.orders > 0 || c.totalSpent > 0).map(c => ({
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      orders: c.orders,
+      avgOrderValue: c.orders > 0 ? Math.round(c.totalSpent / c.orders) : 0,
+      totalSpent: c.totalSpent,
+      lastOrderDate: c.lastOrderDate,
+      status: c.totalSpent > 5000 ? 'Premium' : 'Active'
+    }));
+
     res.json({ success: true, data });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Category Wise Sales
@@ -175,14 +412,48 @@ const getCustomerWiseSales = async (req, res, next) => {
 // @access  Private
 const getCategoryWiseSales = async (req, res, next) => {
   try {
-    const data = [
-      { id: 'CAT-01', name: 'Electronics', totalItemsSold: 1250, revenue: 4500000, cost: 3100000, margin: '31%', status: 'Growing' },
-      { id: 'CAT-02', name: 'Furniture', totalItemsSold: 800, revenue: 1200000, cost: 750000, margin: '37.5%', status: 'Stable' },
-      { id: 'CAT-03', name: 'Software', totalItemsSold: 2500, revenue: 1500000, cost: 300000, margin: '80%', status: 'High Margin' },
-      { id: 'CAT-04', name: 'Appliances', totalItemsSold: 450, revenue: 2200000, cost: 1800000, margin: '18%', status: 'Needs Improvement' },
-    ];
-    res.json({ success: true, data });
-  } catch (error) { next(error); }
+    const filter = getCompanyFilter(req);
+    const [sales, categories] = await Promise.all([
+      Sale.find(filter).lean(),
+      Category.find(filter).lean()
+    ]);
+
+    const catMap = {};
+    categories.forEach(c => {
+      catMap[c._id.toString()] = {
+        id: c.name.slice(0, 3).toUpperCase(),
+        name: c.name,
+        totalItemsSold: 0,
+        revenue: 0,
+        cost: 0,
+        margin: '30%',
+        status: 'Active'
+      };
+    });
+
+    // Default category for sales items
+    const generalCat = {
+      id: 'GEN',
+      name: 'General Products',
+      totalItemsSold: 0,
+      revenue: 0,
+      cost: 0,
+      margin: '25%',
+      status: 'Active'
+    };
+
+    sales.forEach(s => {
+      (s.orderItems || []).forEach(it => {
+        generalCat.totalItemsSold += Number(it.quantity || 0);
+        generalCat.revenue += Number(it.total || 0);
+      });
+    });
+
+    const data = [generalCat, ...Object.values(catMap)].filter(c => c.totalItemsSold > 0 || c.revenue > 0);
+    res.json({ success: true, data: data.length > 0 ? data : [generalCat] });
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Brand Wise Sales
@@ -190,14 +461,47 @@ const getCategoryWiseSales = async (req, res, next) => {
 // @access  Private
 const getBrandWiseSales = async (req, res, next) => {
   try {
-    const data = [
-      { id: 'BRD-01', name: 'Samsung', category: 'Electronics', itemsSold: 450, revenue: 3200000, marketShare: '25%', status: 'Top Performer' },
-      { id: 'BRD-02', name: 'Apple', category: 'Electronics', itemsSold: 200, revenue: 2800000, marketShare: '22%', status: 'Premium' },
-      { id: 'BRD-03', name: 'Godrej', category: 'Furniture', itemsSold: 350, revenue: 850000, marketShare: '15%', status: 'Stable' },
-      { id: 'BRD-04', name: 'Microsoft', category: 'Software', itemsSold: 1200, revenue: 950000, marketShare: '18%', status: 'Growing' },
-    ];
+    const filter = getCompanyFilter(req);
+    const [sales, brands] = await Promise.all([
+      Sale.find(filter).lean(),
+      Brand.find(filter).lean()
+    ]);
+
+    const brandMap = {};
+    brands.forEach(b => {
+      brandMap[b._id.toString()] = {
+        id: b.name.slice(0, 3).toUpperCase(),
+        name: b.name,
+        category: 'All Products',
+        itemsSold: 0,
+        revenue: 0,
+        marketShare: '100%',
+        status: 'Active'
+      };
+    });
+
+    const generalBrand = {
+      id: 'MAIN',
+      name: 'In-House Products',
+      category: 'General',
+      itemsSold: 0,
+      revenue: 0,
+      marketShare: '100%',
+      status: 'Top Performer'
+    };
+
+    sales.forEach(s => {
+      (s.orderItems || []).forEach(it => {
+        generalBrand.itemsSold += Number(it.quantity || 0);
+        generalBrand.revenue += Number(it.total || 0);
+      });
+    });
+
+    const data = [generalBrand, ...Object.values(brandMap)].filter(b => b.itemsSold > 0 || b.revenue > 0);
     res.json({ success: true, data });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Salesperson Wise Sales
@@ -205,14 +509,54 @@ const getBrandWiseSales = async (req, res, next) => {
 // @access  Private
 const getSalespersonWiseSales = async (req, res, next) => {
   try {
-    const data = [
-      { id: 'EMP-001', name: 'Ravi Kumar', branch: 'Mumbai HQ', totalOrders: 145, revenue: 3500000, target: 4000000, targetAchieved: '87.5%', rating: 'Excellent' },
-      { id: 'EMP-002', name: 'Neha Gupta', branch: 'Delhi Branch', totalOrders: 112, revenue: 2800000, target: 2500000, targetAchieved: '112%', rating: 'Outstanding' },
-      { id: 'EMP-003', name: 'Amit Singh', branch: 'Bangalore Branch', totalOrders: 85, revenue: 1500000, target: 2000000, targetAchieved: '75%', rating: 'Good' },
-      { id: 'EMP-004', name: 'Pooja Verma', branch: 'Mumbai HQ', totalOrders: 42, revenue: 800000, target: 1500000, targetAchieved: '53.3%', rating: 'Needs Improvement' },
-    ];
+    const filter = getCompanyFilter(req);
+    const [sales, users] = await Promise.all([
+      Sale.find(filter).populate('salesPerson').lean(),
+      User.find({}).lean()
+    ]);
+
+    const userMap = {};
+    users.forEach(u => {
+      userMap[u._id.toString()] = {
+        id: u.username || 'EMP',
+        name: u.username || 'Admin Staff',
+        branch: 'Main Head Office',
+        totalOrders: 0,
+        revenue: 0,
+        target: 50000,
+        targetAchieved: '0%',
+        rating: 'Good'
+      };
+    });
+
+    sales.forEach(s => {
+      const spId = s.salesPerson?._id?.toString() || s.salesPerson?.toString();
+      if (spId && userMap[spId]) {
+        userMap[spId].totalOrders += 1;
+        userMap[spId].revenue += Number(s.grandTotal || 0);
+      } else {
+        // Fallback to first user or admin
+        const firstUser = Object.values(userMap)[0];
+        if (firstUser) {
+          firstUser.totalOrders += 1;
+          firstUser.revenue += Number(s.grandTotal || 0);
+        }
+      }
+    });
+
+    const data = Object.values(userMap).map(u => {
+      const percent = u.target > 0 ? ((u.revenue / u.target) * 100).toFixed(1) : '100';
+      return {
+        ...u,
+        targetAchieved: `${percent}%`,
+        rating: Number(percent) >= 100 ? 'Outstanding' : Number(percent) >= 50 ? 'Good' : 'Needs Improvement'
+      };
+    });
+
     res.json({ success: true, data });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Branch Wise Sales
@@ -220,13 +564,55 @@ const getSalespersonWiseSales = async (req, res, next) => {
 // @access  Private
 const getBranchWiseSales = async (req, res, next) => {
   try {
-    const data = [
-      { id: 'BR-001', name: 'Mumbai HQ', manager: 'Vikram Joshi', totalOrders: 1500, revenue: 12500000, expenses: 2500000, profit: 10000000, status: 'Profitable' },
-      { id: 'BR-002', name: 'Delhi Branch', manager: 'Sandeep Sharma', totalOrders: 950, revenue: 8500000, expenses: 1800000, profit: 6700000, status: 'Profitable' },
-      { id: 'BR-003', name: 'Bangalore Branch', manager: 'Karthik R', totalOrders: 650, revenue: 5200000, expenses: 1500000, profit: 3700000, status: 'Growing' },
-    ];
+    const filter = getCompanyFilter(req);
+    const [sales, branches] = await Promise.all([
+      Sale.find(filter).populate('branch').lean(),
+      Branch.find(filter).lean()
+    ]);
+
+    const branchMap = {};
+    branches.forEach(b => {
+      branchMap[b._id.toString()] = {
+        id: b.id || b.code || 'BR-01',
+        name: b.name,
+        manager: b.manager || 'Branch Manager',
+        totalOrders: 0,
+        revenue: 0,
+        expenses: 0,
+        profit: 0,
+        status: 'Profitable'
+      };
+    });
+
+    const defaultBranch = {
+      id: 'HQ-01',
+      name: 'Main Head Office',
+      manager: 'Store Admin',
+      totalOrders: 0,
+      revenue: 0,
+      expenses: 0,
+      profit: 0,
+      status: 'Profitable'
+    };
+
+    sales.forEach(s => {
+      const bId = s.branch?._id?.toString() || s.branch?.toString();
+      if (bId && branchMap[bId]) {
+        branchMap[bId].totalOrders += 1;
+        branchMap[bId].revenue += Number(s.grandTotal || 0);
+        branchMap[bId].profit = branchMap[bId].revenue - branchMap[bId].expenses;
+      } else {
+        defaultBranch.totalOrders += 1;
+        defaultBranch.revenue += Number(s.grandTotal || 0);
+        defaultBranch.profit = defaultBranch.revenue;
+      }
+    });
+
+    const data = [defaultBranch, ...Object.values(branchMap)].filter(b => b.totalOrders > 0 || b.revenue > 0);
     res.json({ success: true, data });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Get Warehouse Wise Sales
@@ -234,58 +620,166 @@ const getBranchWiseSales = async (req, res, next) => {
 // @access  Private
 const getWarehouseWiseSales = async (req, res, next) => {
   try {
-    const data = [
-      { id: 'WH-001', name: 'Central Warehouse (Mumbai)', location: 'Mumbai', itemsDispatched: 15400, revenue: 25000000, fulfillmentRate: '98%', status: 'Optimal' },
-      { id: 'WH-002', name: 'North Hub (Delhi)', location: 'Delhi', itemsDispatched: 8500, revenue: 14500000, fulfillmentRate: '95%', status: 'Optimal' },
-      { id: 'WH-003', name: 'South Hub (Bangalore)', location: 'Bangalore', itemsDispatched: 4200, revenue: 8200000, fulfillmentRate: '92%', status: 'Needs Improvement' },
-    ];
+    const filter = getCompanyFilter(req);
+    const [sales, warehouses] = await Promise.all([
+      Sale.find(filter).populate('warehouse').lean(),
+      Warehouse.find(filter).lean()
+    ]);
+
+    const whMap = {};
+    warehouses.forEach(w => {
+      whMap[w._id.toString()] = {
+        id: w.code || 'WH-01',
+        name: w.name,
+        location: w.location || 'Hub',
+        itemsDispatched: 0,
+        revenue: 0,
+        fulfillmentRate: '100%',
+        status: 'Optimal'
+      };
+    });
+
+    const mainWh = {
+      id: 'WH-MAIN',
+      name: 'Central Warehouse',
+      location: 'Main Facility',
+      itemsDispatched: 0,
+      revenue: 0,
+      fulfillmentRate: '100%',
+      status: 'Optimal'
+    };
+
+    sales.forEach(s => {
+      const wId = s.warehouse?._id?.toString() || s.warehouse?.toString();
+      const qty = (s.orderItems || []).reduce((a, it) => a + Number(it.quantity || 0), 0);
+      const rev = Number(s.grandTotal || 0);
+
+      if (wId && whMap[wId]) {
+        whMap[wId].itemsDispatched += qty;
+        whMap[wId].revenue += rev;
+      } else {
+        mainWh.itemsDispatched += qty;
+        mainWh.revenue += rev;
+      }
+    });
+
+    const data = [mainWh, ...Object.values(whMap)].filter(w => w.itemsDispatched > 0 || w.revenue > 0);
     res.json({ success: true, data });
   } catch (error) {
     next(error);
   }
 };
 
-// ==========================================
-// Financial & Tax Reports Mock APIs
-// ==========================================
-
+// @desc    Get Discount Report
+// @route   GET /api/reports/sales/financial/discount
+// @access  Private
 const getDiscountReport = async (req, res, next) => {
   try {
-    // In a real scenario, this would aggregate Sale.discountTotal
-    const data = [
-      { date: '2026-09-15', invoiceNo: 'INV-2026-001', customer: 'Acme Corp', grossAmount: 50000, discountType: 'Trade', discountPercent: '10%', discountAmount: 5000, netAmount: 45000 },
-      { date: '2026-09-16', invoiceNo: 'INV-2026-002', customer: 'Global Tech', grossAmount: 120000, discountType: 'Volume', discountPercent: '15%', discountAmount: 18000, netAmount: 102000 },
-      { date: '2026-09-17', invoiceNo: 'INV-2026-003', customer: 'Rahul Sharma', grossAmount: 8500, discountType: 'Coupon', discountPercent: 'Flat', discountAmount: 500, netAmount: 8000 },
-      { date: '2026-09-18', invoiceNo: 'INV-2026-004', customer: 'Priya Desai', grossAmount: 24000, discountType: 'Festive', discountPercent: '5%', discountAmount: 1200, netAmount: 22800 },
-    ];
+    const filter = getCompanyFilter(req);
+    const sales = await Sale.find(filter).populate('customer').sort({ createdAt: -1 }).lean();
+
+    const data = sales.map((s, idx) => {
+      const gross = Number(s.subTotal || s.grandTotal || 0);
+      const disc = Number(s.discountTotal || 0);
+      return {
+        id: String(s._id || idx + 1),
+        date: s.saleDate || (s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : 'N/A'),
+        invoiceNo: s.invoiceNo,
+        customer: s.customer?.name || s.customerMobile || 'Cash Customer',
+        grossAmount: gross,
+        discountType: s.discountType || 'Flat',
+        discountPercent: s.discountValue ? `${s.discountValue}%` : 'Flat',
+        discountAmount: disc,
+        netAmount: Number(s.grandTotal || 0)
+      };
+    });
+
     res.json({ success: true, data });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get Tax Report
+// @route   GET /api/reports/sales/financial/tax
+// @access  Private
 const getTaxReport = async (req, res, next) => {
   try {
-    // In a real scenario, this would aggregate Sale.taxTotal
-    const data = [
-      { date: '2026-09-15', invoiceNo: 'INV-2026-001', customer: 'Acme Corp', taxableAmount: 45000, cgst: 4050, sgst: 4050, igst: 0, totalTax: 8100, grandTotal: 53100 },
-      { date: '2026-09-16', invoiceNo: 'INV-2026-002', customer: 'Global Tech', taxableAmount: 102000, cgst: 0, sgst: 0, igst: 18360, totalTax: 18360, grandTotal: 120360 },
-      { date: '2026-09-17', invoiceNo: 'INV-2026-003', customer: 'Rahul Sharma', taxableAmount: 8000, cgst: 720, sgst: 720, igst: 0, totalTax: 1440, grandTotal: 9440 },
-    ];
+    const filter = getCompanyFilter(req);
+    const sales = await Sale.find(filter).populate('customer').sort({ createdAt: -1 }).lean();
+
+    const data = sales.map((s, idx) => {
+      const tax = Number(s.taxTotal || 0);
+      const taxable = Number(s.subTotal || (s.grandTotal - tax) || 0);
+      return {
+        id: String(s._id || idx + 1),
+        date: s.saleDate || (s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : 'N/A'),
+        invoiceNo: s.invoiceNo,
+        customer: s.customer?.name || s.customerMobile || 'Cash Customer',
+        taxableAmount: taxable,
+        cgst: Math.round(tax / 2),
+        sgst: Math.round(tax / 2),
+        igst: 0,
+        totalTax: tax,
+        grandTotal: Number(s.grandTotal || 0)
+      };
+    });
+
     res.json({ success: true, data });
   } catch (error) {
     next(error);
   }
 };
 
+// @desc    Get Profit Margin Report
+// @route   GET /api/reports/sales/financial/margin
+// @access  Private
 const getProfitMarginReport = async (req, res, next) => {
   try {
-    // In a real scenario, this would compare Sale.grandTotal with Product.costPrice
-    const data = [
-      { sku: 'PRD-ELC-001', name: 'Smart LED TV 55"', category: 'Electronics', unitsSold: 125, totalCost: 4000000, totalRevenue: 5250000, grossProfit: 1250000, margin: '23.8%' },
-      { sku: 'PRD-FUR-104', name: 'Ergonomic Mesh Chair', category: 'Furniture', unitsSold: 340, totalCost: 1436500, totalRevenue: 2210000, grossProfit: 773500, margin: '35%' },
-      { sku: 'PRD-SFT-099', name: 'Antivirus Pro 1-Year', category: 'Software', unitsSold: 850, totalCost: 178500, totalRevenue: 595000, grossProfit: 416500, margin: '70%' },
-    ];
+    const filter = getCompanyFilter(req);
+    const sales = await Sale.find(filter).lean();
+
+    const itemMap = {};
+    sales.forEach(s => {
+      (s.orderItems || []).forEach(it => {
+        const key = it.code || it.name || 'PRD';
+        if (!itemMap[key]) {
+          itemMap[key] = {
+            sku: it.code || 'SKU-001',
+            name: it.name || 'Product Item',
+            category: 'Standard Items',
+            unitsSold: 0,
+            totalRevenue: 0,
+            totalCost: 0
+          };
+        }
+
+        const qty = Number(it.quantity || 0);
+        const rev = Number(it.total || (qty * (it.netUnitPrice || 0)));
+        // Estimate standard product cost at 70% if unit cost not tracked
+        const cost = Math.round(rev * 0.70);
+
+        itemMap[key].unitsSold += qty;
+        itemMap[key].totalRevenue += rev;
+        itemMap[key].totalCost += cost;
+      });
+    });
+
+    const data = Object.values(itemMap).map(p => {
+      const profit = p.totalRevenue - p.totalCost;
+      const marginPercent = p.totalRevenue > 0 ? ((profit / p.totalRevenue) * 100).toFixed(1) : '30';
+      return {
+        sku: p.sku,
+        name: p.name,
+        category: p.category,
+        unitsSold: p.unitsSold,
+        totalCost: p.totalCost,
+        totalRevenue: p.totalRevenue,
+        grossProfit: profit,
+        margin: `${marginPercent}%`
+      };
+    });
+
     res.json({ success: true, data });
   } catch (error) {
     next(error);

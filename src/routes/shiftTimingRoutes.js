@@ -9,10 +9,10 @@ const {
 } = require('../controllers/shiftTimingController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.post('/', protect, checkPermission('manage_hrms'), addShiftTiming);
-router.get('/', protect, checkPermission('manage_hrms'), getShiftTimings);
-router.get('/:id', protect, checkPermission('manage_hrms'), getShiftTimingById);
-router.put('/:id', protect, checkPermission('manage_hrms'), updateShiftTiming);
-router.delete('/:id', protect, checkPermission('manage_hrms'), deleteShiftTiming);
+router.post('/', protect, checkPermission('create_shift_timings'), addShiftTiming);
+router.get('/', protect, checkPermission('view_shift_timings'), getShiftTimings);
+router.get('/:id', protect, checkPermission('view_shift_timings'), getShiftTimingById);
+router.put('/:id', protect, checkPermission('edit_shift_timings'), updateShiftTiming);
+router.delete('/:id', protect, checkPermission('delete_shift_timings'), deleteShiftTiming);
 
 module.exports = router;

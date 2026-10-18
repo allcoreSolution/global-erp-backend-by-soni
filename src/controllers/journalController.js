@@ -5,10 +5,7 @@ const { Journal } = require('../models/Journal');
 // @access  Private
 const createJournal = async (req, res, next) => {
   try {
-    const newJournal = await Journal.create({
-      ...req.body,
-      company: req.user?.companyId || req.body.company
-    });
+    const newJournal = await Journal.create(req.body);
 
     res.status(201).json({ success: true, data: newJournal });
   } catch (error) {
@@ -21,8 +18,7 @@ const createJournal = async (req, res, next) => {
 // @access  Private
 const getJournals = async (req, res, next) => {
   try {
-    const query = req.user?.companyId ? { company: req.user.companyId } : {};
-    const journals = await Journal.find(query);
+    const journals = await Journal.find({});
     res.json({ success: true, data: journals });
   } catch (error) {
     next(error);

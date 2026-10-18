@@ -14,7 +14,7 @@ const employeeSchema = new mongoose.Schema({
   company: { type: String, default: '' }, // acts as the tenant isolation key
   branch: { type: String, default: '' },
   department: { type: String, default: '' },
-  designation: { type: String, default: '' },
+  role: { type: String, default: '' },
   employeeType: { type: String, default: 'Permanent' },
   joiningDate: { type: String, default: '' },
   status: { type: String, default: 'Active' },
@@ -67,4 +67,6 @@ const employeeSchema = new mongoose.Schema({
 
 const Employee = mongoose.model('Employee', employeeSchema);
 
-module.exports = { Employee };
+Employee.Employee = Employee;
+module.exports = Employee;
+module.exports.Employee = Employee;

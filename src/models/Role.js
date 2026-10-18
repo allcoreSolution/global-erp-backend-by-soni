@@ -15,23 +15,18 @@ const roleSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   roleCode: { type: String },
   roleType: { type: String, default: 'Custom' },
-  description: {
-    type: String,
-    default: ''
-  },
   status: { type: String, default: 'Active' },
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' },
   
-  // Access Scopes
-  companyAccess: { type: String, default: 'All' },
-  branchAccess: { type: String, default: 'All' },
-  departmentAccess: { type: String, default: 'All' },
-  warehouseAccess: { type: String, default: 'All' },
+  // Access Scopes (Defaults to Single company isolation; SuperAdmin gets All)
+  companyAccess: { type: String, default: 'Single' },
+  branchAccess: { type: String, default: 'Single' },
+  departmentAccess: { type: String, default: 'Single' },
+  warehouseAccess: { type: String, default: 'Single' },
   defaultBranch: { type: String },
   defaultWarehouse: { type: String },
 
@@ -46,5 +41,8 @@ const roleSchema = new mongoose.Schema({
     default: []
   }
 }, { timestamps: true });
+
+// Compound index so different companies can have roles with the same name, but inside one company name must be unique
+roleSchema.index({ company: 1, name: 1 }, { unique: true });
 
 module.exports = mongoose.model('Role', roleSchema);

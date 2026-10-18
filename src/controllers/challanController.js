@@ -86,10 +86,39 @@ const deleteChallan = async (req, res, next) => {
   }
 };
 
+// @desc    Import Challans from CSV data
+// @route   POST /api/challans/import
+// @access  Private
+const importChallans = async (req, res, next) => {
+  try {
+    const challans = req.body;
+    if (!Array.isArray(challans) || challans.length === 0) {
+      res.status(400);
+      return next(new Error('No valid challans data provided'));
+    }
+
+    const companyId = req.user?.companyId || challans[0].company;
+
+    const challansToInsert = challans.map(challan => {
+       return {
+         ...challan,
+         company: companyId,
+         challanNo: challan.challanNo || `CHL-IMP-${Date.now()}-${Math.floor(Math.random()*1000)}`
+       };
+    });
+
+    const result = await Challan.insertMany(challansToInsert);
+    res.status(201).json({ success: true, count: result.length, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createChallan,
   getChallans,
   getChallanById,
   updateChallan,
-  deleteChallan
+  deleteChallan,
+  importChallans
 };

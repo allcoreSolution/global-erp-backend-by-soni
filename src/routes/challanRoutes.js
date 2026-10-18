@@ -5,13 +5,17 @@ const {
   getChallans, 
   getChallanById, 
   updateChallan, 
-  deleteChallan 
+  deleteChallan,
+  importChallans
 } = require('../controllers/challanController');
 const { protect } = require('../middlewares/authMiddleware');
 
 router.route('/')
   .post(protect, createChallan)
   .get(protect, getChallans);
+
+router.route('/import')
+  .post(protect, importChallans);
 
 router.route('/:id')
   .get(protect, getChallanById)

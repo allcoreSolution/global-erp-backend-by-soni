@@ -7,15 +7,15 @@ const {
   updateCourier, 
   deleteCourier 
 } = require('../controllers/courierController');
-const { protect } = require('../middlewares/authMiddleware');
+const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
 router.route('/')
-  .post(protect, createCourier)
-  .get(protect, getCouriers);
+  .post(protect, checkPermission('create_couriers'), createCourier)
+  .get(protect, checkPermission('view_couriers'), getCouriers);
 
 router.route('/:id')
-  .get(protect, getCourierById)
-  .put(protect, updateCourier)
-  .delete(protect, deleteCourier);
+  .get(protect, checkPermission('view_couriers'), getCourierById)
+  .put(protect, checkPermission('edit_couriers'), updateCourier)
+  .delete(protect, checkPermission('delete_couriers'), deleteCourier);
 
 module.exports = router;

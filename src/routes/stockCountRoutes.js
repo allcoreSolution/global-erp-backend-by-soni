@@ -10,11 +10,11 @@ const {
 } = require('../controllers/stockCountController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.get('/', protect, getStockCounts);
-router.get('/:id', protect, getStockCountById);
-router.post('/', protect, checkPermission('manage_stock'), createStockCount);
-router.put('/:id', protect, checkPermission('manage_stock'), updateStockCount);
-router.patch('/:id', protect, checkPermission('manage_stock'), patchStockCount);
-router.delete('/:id', protect, checkPermission('manage_stock'), deleteStockCount);
+router.get('/', protect, checkPermission('view_stock'), getStockCounts);
+router.get('/:id', protect, checkPermission('view_stock'), getStockCountById);
+router.post('/', protect, checkPermission('create_stock'), createStockCount);
+router.put('/:id', protect, checkPermission('edit_stock'), updateStockCount);
+router.patch('/:id', protect, checkPermission('edit_stock'), patchStockCount);
+router.delete('/:id', protect, checkPermission('delete_stock'), deleteStockCount);
 
 module.exports = router;

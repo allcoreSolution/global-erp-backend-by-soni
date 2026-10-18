@@ -50,6 +50,7 @@ const purchaseReturnSchema = new mongoose.Schema({
   itemCondition: { type: String, default: 'Damaged' },
 
   // Items
+  documentUrl: { type: String, default: '' },
   items: [returnItemSchema],
 
   // Totals

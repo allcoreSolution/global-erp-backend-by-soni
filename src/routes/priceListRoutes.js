@@ -10,11 +10,11 @@ const {
 } = require('../controllers/priceListController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.get('/', protect, getPriceLists);
-router.get('/:id', protect, getPriceListById);
-router.post('/', protect, checkPermission('manage_products'), createPriceList);
-router.put('/:id', protect, checkPermission('manage_products'), updatePriceList);
-router.patch('/:id', protect, checkPermission('manage_products'), patchPriceList);
-router.delete('/:id', protect, checkPermission('manage_products'), deletePriceList);
+router.get('/', protect, checkPermission('view_price_lists'), getPriceLists);
+router.get('/:id', protect, checkPermission('view_price_lists'), getPriceListById);
+router.post('/', protect, checkPermission('create_price_lists'), createPriceList);
+router.put('/:id', protect, checkPermission('edit_price_lists'), updatePriceList);
+router.patch('/:id', protect, checkPermission('edit_price_lists'), patchPriceList);
+router.delete('/:id', protect, checkPermission('delete_price_lists'), deletePriceList);
 
 module.exports = router;

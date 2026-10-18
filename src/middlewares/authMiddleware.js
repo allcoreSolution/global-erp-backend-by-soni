@@ -49,29 +49,73 @@ const protect = async (req, res, next) => {
   }
 };
 
-// Permission checker middleware
-const checkPermission = (permission) => {
+const { MODULE_KEY_MAP } = require('../config/permissions');
+
+// Permission checker middleware: supports string keys, module names, and action checks
+const checkPermission = (permission, explicitAction = null) => {
   return async (req, res, next) => {
     try {
       if (!req.user || !req.user.role) {
-        res.status(403);
-        return next(new Error('Access denied: Role info missing'));
+        return res.status(403).json({ success: false, message: 'Access denied: Role info missing' });
       }
 
       const role = req.user.role;
 
-      // SuperAdmin and Admin get all bypass access
+      // 1. SuperAdmin and Admin get full bypass
       if (role.name === 'SuperAdmin' || role.name === 'Admin') {
         return next();
       }
 
-      // Check if permission exists in permissions array
-      if (role.permissions.includes(permission)) {
+      // Determine required action based on HTTP method if not explicitly passed
+      let action = explicitAction;
+      if (!action) {
+        switch (req.method) {
+          case 'GET': action = 'view'; break;
+          case 'POST': action = 'create'; break;
+          case 'PUT':
+          case 'PATCH': action = 'edit'; break;
+          case 'DELETE': action = 'delete'; break;
+          default: action = 'view';
+        }
+      }
+
+      const permList = Array.isArray(permission) ? permission : [permission];
+
+      // 2. Direct string permissions array match (legacy or explicit)
+      const hasDirectPerm = permList.some(p => Array.isArray(role.permissions) && role.permissions.includes(p));
+      if (hasDirectPerm) {
         return next();
       }
 
-      res.status(403);
-      return next(new Error(`Access denied: Missing permission '${permission}'`));
+      // 3. Module Permissions Matrix check
+      if (Array.isArray(role.modulePermissions) && role.modulePermissions.length > 0) {
+        for (const singlePerm of permList) {
+          const mapped = MODULE_KEY_MAP[singlePerm];
+          const targetModuleName = typeof (mapped ? mapped.module : singlePerm) === 'string'
+            ? (mapped ? mapped.module : singlePerm)
+            : String(singlePerm || '');
+          const targetAction = mapped && !explicitAction ? mapped.action : action;
+
+          const modPerm = role.modulePermissions.find(
+            m => (m.module || m.name || '').toLowerCase() === targetModuleName.toLowerCase()
+          );
+
+          if (modPerm) {
+            if (targetAction === 'view' && modPerm.view) return next();
+            if (targetAction === 'create' && (modPerm.create || modPerm.edit)) return next();
+            if (targetAction === 'edit' && modPerm.edit) return next();
+            if (targetAction === 'delete' && modPerm.delete) return next();
+            if (targetAction === 'approve' && modPerm.approve) return next();
+            if (targetAction === 'export' && modPerm.export) return next();
+          }
+        }
+      }
+
+      // If neither check passed, deny access
+      return res.status(403).json({
+        success: false,
+        message: `Access denied: Missing permission '${Array.isArray(permission) ? permission.join(', ') : permission}' (${action})`
+      });
     } catch (error) {
       next(error);
     }

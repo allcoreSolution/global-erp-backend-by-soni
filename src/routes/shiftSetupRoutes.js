@@ -10,12 +10,12 @@ const {
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
 router.route('/')
-  .post(protect, checkPermission('manage_hrms'), createShiftSetup)
-  .get(protect, getShiftSetups);
+  .post(protect, checkPermission('create_shift_setups'), createShiftSetup)
+  .get(protect, checkPermission('view_shift_setups'), getShiftSetups);
 
 router.route('/:id')
-  .get(protect, getShiftSetupById)
-  .put(protect, checkPermission('manage_hrms'), updateShiftSetup)
-  .delete(protect, checkPermission('manage_hrms'), deleteShiftSetup);
+  .get(protect, checkPermission('view_shift_setups'), getShiftSetupById)
+  .put(protect, checkPermission('edit_shift_setups'), updateShiftSetup)
+  .delete(protect, checkPermission('delete_shift_setups'), deleteShiftSetup);
 
 module.exports = router;

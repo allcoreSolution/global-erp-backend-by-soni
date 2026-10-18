@@ -22,6 +22,14 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Normalize duplicate leading slashes so //uploads and similar URLs never 404
+app.use((req, res, next) => {
+  if (req.url.startsWith('//')) {
+    req.url = req.url.replace(/^\/+/, '/');
+  }
+  next();
+});
+
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
@@ -62,6 +70,10 @@ app.use('/api/upload', uploadRoutes);
 // Employee Routes
 const employeeRoutes = require('./src/routes/employeeRoutes');
 app.use('/api/employees', employeeRoutes);
+
+// User Activity & Audit Log Routes
+const userActivityRoutes = require('./src/routes/userActivityRoutes');
+app.use('/api/user-activity', userActivityRoutes);
 
 // Product Routes
 const productRoutes = require('./src/routes/productRoutes');
@@ -147,6 +159,22 @@ app.use('/api/supplier-categories', require('./src/routes/supplierCategoryRoutes
 app.use('/api/tax-preferences', require('./src/routes/taxPreferenceRoutes'));
 app.use('/api/payment-terms', require('./src/routes/paymentTermRoutes'));
 
+// Payment Modes Endpoint
+app.get('/api/payment-modes', (req, res) => {
+  res.json({
+    success: true,
+    data: [
+      { id: '1', name: 'Cash' },
+      { id: '2', name: 'Bank Transfer' },
+      { id: '3', name: 'UPI' },
+      { id: '4', name: 'Cheque' },
+      { id: '5', name: 'Credit Card' },
+      { id: '6', name: 'Debit Card' },
+      { id: '7', name: 'Online' }
+    ]
+  });
+});
+
 // Debit Note Routes
 const debitNoteRoutes = require('./src/routes/debitNoteRoutes');
 app.use('/api/debit-notes', debitNoteRoutes);
@@ -177,7 +205,6 @@ app.use('/api/journal-vouchers', journalVoucherRoutes);
 // const hrmsRoutes = require('./src/routes/hrmsRoutes');
 // app.use('/api/hrms', hrmsRoutes);
 
-// Removed duplicate for Employee Routes
 
 // Salary Structure Routes
 const salaryStructureRoutes = require('./src/routes/salaryStructureRoutes');
@@ -196,8 +223,8 @@ const departmentRoutes = require('./src/routes/departmentRoutes');
 app.use('/api/departments', departmentRoutes);
 
 // Designation Routes
-const designationRoutes = require('./src/routes/designationRoutes');
-app.use('/api/designations', designationRoutes);
+// const designationRoutes = require('./src/routes/designationRoutes');
+// app.use('/api/designations', designationRoutes);
 
 // Shift Setup Routes
 const shiftSetupRoutes = require('./src/routes/shiftSetupRoutes');
@@ -249,6 +276,10 @@ app.use('/api/statutory', statutoryRoutes);
 const accountLedgerRoutes = require('./src/routes/accountLedgerRoutes');
 app.use('/api/account-ledgers', accountLedgerRoutes);
 
+// Account Group Routes
+const accountGroupRoutes = require('./src/routes/accountGroupRoutes');
+app.use('/api/account-groups', accountGroupRoutes);
+
 // Voucher Routes
 const voucherRoutes = require('./src/routes/voucherRoutes');
 app.use('/api/vouchers', voucherRoutes);
@@ -258,6 +289,9 @@ app.use('/api/reports/financial', financialReportRoutes);
 
 const analysisReportRoutes = require('./src/routes/analysisReportRoutes');
 app.use('/api/reports/analysis', analysisReportRoutes);
+
+const accountReportRoutes = require('./src/routes/accountReportRoutes');
+app.use('/api/reports/accounts', accountReportRoutes);
 
 // Customer Routes
 const customerRoutes = require('./src/routes/customerRoutes');
@@ -346,6 +380,11 @@ app.use('/api/dashboard', dashboardRoutes);
 // Notification Routes
 const notificationRoutes = require('./src/routes/notificationRoutes');
 app.use('/api/notifications', notificationRoutes);
+
+// Support & Help Ticket Routes
+const supportTicketRoutes = require('./src/routes/supportTicketRoutes');
+app.use('/api/support/tickets', supportTicketRoutes);
+app.use('/api/support-tickets', supportTicketRoutes);
 
 // Backup & Restore Routes
 const backupRoutes = require('./src/routes/backupRoutes');

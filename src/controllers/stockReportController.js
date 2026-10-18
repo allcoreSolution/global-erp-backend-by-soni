@@ -10,9 +10,9 @@ const { PurchaseReturn } = require('../models/PurchaseReturn');
 // @access  Private
 const getStockSummary = async (req, res, next) => {
   try {
-    const products = await Product.find({ 
-      company: req.user?.companyId, 
-      isActive: true 
+    const products = await Product.find({
+      company: req.user?.companyId,
+      isActive: true
     }).populate('category', 'name').populate('brand', 'name');
 
     let totalStockValue = 0;
@@ -24,7 +24,7 @@ const getStockSummary = async (req, res, next) => {
       const currentStock = product.currentStock || 0;
       const purchasePrice = parseFloat(product.productCost) || 0;
       const salePrice = parseFloat(product.productPrice) || 0;
-      
+
       const stockValue = currentStock * purchasePrice;
       const potentialSaleValue = currentStock * salePrice;
 
@@ -78,8 +78,7 @@ const getLowStockReport = async (req, res, next) => {
       company: req.user?.companyId,
       isActive: true
     }).populate('category', 'name').populate('brand', 'name');
-    
-    // Manual filter since alertQuantity is often stored as string in this DB schema
+
     const lowStockProducts = products.filter(p => {
       const current = p.currentStock || 0;
       const min = parseFloat(p.alertQuantity || 0);
@@ -96,15 +95,12 @@ const getLowStockReport = async (req, res, next) => {
         category: product.category?.name || 'N/A',
         brand: product.brand?.name || 'N/A',
         currentStock: current,
-        minStockLevel: min,
+        minStock: min,              // ✅ FIX: minStockLevel → minStock
         shortage: Math.max(0, min - current)
       };
     });
 
-    res.json({
-      success: true,
-      data: result
-    });
+    res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
@@ -115,9 +111,9 @@ const getLowStockReport = async (req, res, next) => {
 // @access  Private
 const getCurrentStock = async (req, res, next) => {
   try {
-    const products = await Product.find({ 
-      company: req.user?.companyId, 
-      isActive: true 
+    const products = await Product.find({
+      company: req.user?.companyId,
+      isActive: true
     });
 
     // To calculate committed stock, find all Pending/Draft sales.
@@ -165,72 +161,67 @@ const getCurrentStock = async (req, res, next) => {
 // @access  Private
 const getOpeningStock = async (req, res, next) => {
   try {
-    const products = await Product.find({ 
-      company: req.user?.companyId, 
-      hasInitialStock: true 
-    });
+    const products = await Product.find({
+      company: req.user?.companyId,
+      isActive: true
+    }).populate('category', 'name');
 
     const stockDetails = products.map(product => {
-      const qty = parseFloat(product.initialStockQty || 0);
+      // initialStockQty prefer karo, nahi hai toh currentStock use karo
+      const openingQty = parseFloat(product.initialStockQty || 0) || (product.currentStock || 0);
       const rate = parseFloat(product.productCost || 0);
       return {
         productId: product._id,
-        name: product.productName,
-        sku: product.sku || product.productCode,
-        date: product.createdAt, // Approximation of opening date
-        qty,
+        name: product.productName || '',
+        sku: product.sku || product.productCode || '',
+        category: product.category?.name || 'N/A',
+        date: product.createdAt,
+        openingQty,
         rate,
-        value: qty * rate
+        openingValue: openingQty * rate
       };
-    }).filter(item => item.qty > 0);
+    }).filter(item => item.openingQty > 0); // sirf wo products jo stock mein hain
 
-    res.json({
-      success: true,
-      data: stockDetails
-    });
+    res.json({ success: true, data: stockDetails });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Get Closing Stock grouped by category
+// @desc    Get Closing Stock — item-level list
 // @route   GET /api/reports/stock/closing-stock
 // @access  Private
 const getClosingStock = async (req, res, next) => {
   try {
-    const products = await Product.find({ 
-      company: req.user?.companyId, 
-      isActive: true 
+    const products = await Product.find({
+      company: req.user?.companyId,
+      isActive: true
     }).populate('category', 'name');
 
-    const categoryMap = {};
     let totalClosingValue = 0;
 
-    products.forEach(product => {
-      const catName = product.category?.name || 'Uncategorized';
-      if (!categoryMap[catName]) {
-        categoryMap[catName] = {
-          categoryName: catName,
-          itemCount: 0,
-          totalQty: 0,
-          stockValue: 0
-        };
-      }
-      
-      const qty = product.currentStock || 0;
-      const val = qty * (parseFloat(product.productCost) || 0);
-      
-      categoryMap[catName].itemCount += 1;
-      categoryMap[catName].totalQty += qty;
-      categoryMap[catName].stockValue += val;
-      totalClosingValue += val;
+    const items = products.map(product => {
+      const closingQty = product.currentStock || 0;
+      const rate = parseFloat(product.productCost) || 0;
+      const closingValue = closingQty * rate;
+      totalClosingValue += closingValue;
+
+      return {
+        productId: product._id,
+        name: product.productName || '',
+        sku: product.sku || product.productCode || '',
+        category: product.category?.name || 'N/A',
+        closingQty,
+        rate,
+        closingValue
+      };
     });
 
     res.json({
       success: true,
       data: {
         totalClosingValue,
-        categories: Object.values(categoryMap)
+        items
       }
     });
   } catch (error) {
@@ -243,29 +234,28 @@ const getClosingStock = async (req, res, next) => {
 // @access  Private
 const getStockLedger = async (req, res, next) => {
   try {
-    // For MVP ledger, we fetch purchases, sales, and stock entries
     const [purchases, sales, entries] = await Promise.all([
       Purchase.find({ company: req.user?.companyId }).populate('orderItems.product', 'productName sku productCode'),
       Sale.find({ company: req.user?.companyId }).populate('orderItems.product', 'productName sku productCode'),
-      StockEntry.find({ company: req.user?.companyId }) // Note: StockEntry schema stores product as String ID, maybe not Object ID ref.
+      StockEntry.find({ company: req.user?.companyId })
     ]);
 
     const ledger = [];
-    
+
     // Process Purchases (Inward)
     purchases.forEach(p => {
       p.orderItems?.forEach(item => {
-        if(item.product) {
+        if (item.product) {
           ledger.push({
             date: p.purchaseDate || p.createdAt,
-            voucherNo: p.referenceNo,
+            voucherNo: p.referenceNo || p.purchaseNo || '',
             type: 'Purchase',
-            item: item.product.productName,
-            sku: item.product.sku || item.product.productCode,
-            inward: item.quantity,
-            outward: 0,
-            rate: item.netUnitPrice,
-            warehouse: p.warehouse
+            productName: item.product.productName || item.name || '',
+            sku: item.product.sku || item.product.productCode || item.code || '',
+            in: item.quantity || 0,
+            out: 0,
+            rate: item.netUnitCost || item.netUnitPrice || 0,
+            warehouse: p.warehouse || ''
           });
         }
       });
@@ -274,36 +264,36 @@ const getStockLedger = async (req, res, next) => {
     // Process Sales (Outward)
     sales.forEach(s => {
       s.orderItems?.forEach(item => {
-        if(item.product) {
+        if (item.product) {
           ledger.push({
             date: s.saleDate || s.createdAt,
-            voucherNo: s.invoiceNo,
+            voucherNo: s.invoiceNo || '',
             type: 'Sale',
-            item: item.product.productName,
-            sku: item.product.sku || item.product.productCode,
-            inward: 0,
-            outward: item.quantity,
-            rate: item.netUnitPrice,
-            warehouse: s.warehouse
+            productName: item.product.productName || item.name || '',
+            sku: item.product.sku || item.product.productCode || item.code || '',
+            in: 0,
+            out: item.quantity || 0,
+            rate: item.netUnitPrice || 0,
+            warehouse: s.warehouse || ''
           });
         }
       });
     });
 
-    // Process StockEntries (Inward/Outward depending on stockType)
+    // Process StockEntries
     entries.forEach(e => {
       e.products?.forEach(item => {
         const isOutward = e.stockType === 'Stock Transfer' || e.stockType === 'Outward';
         ledger.push({
           date: e.stockDate || e.createdAt,
-          voucherNo: e.stockNo,
-          type: e.stockType,
-          item: item.product, // usually string name in this schema
-          sku: item.sku,
-          inward: isOutward ? 0 : item.qty,
-          outward: isOutward ? item.qty : 0,
-          rate: item.rate,
-          warehouse: e.locationWarehouse || e.warehouseBase
+          voucherNo: e.stockNo || '',
+          type: e.stockType || 'Stock Entry',
+          productName: item.product || item.name || '',
+          sku: item.sku || item.code || '',
+          in: isOutward ? 0 : (item.qty || 0),
+          out: isOutward ? (item.qty || 0) : 0,
+          rate: item.rate || 0,
+          warehouse: e.locationWarehouse || e.warehouseBase || ''
         });
       });
     });
@@ -311,9 +301,23 @@ const getStockLedger = async (req, res, next) => {
     // Sort by date descending
     ledger.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+    // Calculate running balance per product (sku-wise)
+    const balanceMap = {};
+    // Sort ascending first for balance calculation
+    const ascLedger = [...ledger].sort((a, b) => new Date(a.date) - new Date(b.date));
+    ascLedger.forEach(entry => {
+      const key = entry.sku || entry.productName;
+      if (!balanceMap[key]) balanceMap[key] = 0;
+      balanceMap[key] += (entry.in || 0) - (entry.out || 0);
+      entry.balance = balanceMap[key];
+    });
+
+    // Return sorted descending with balance
+    ascLedger.sort((a, b) => new Date(b.date) - new Date(a.date));
+
     res.json({
       success: true,
-      data: ledger
+      data: ascLedger
     });
   } catch (error) {
     next(error);
@@ -324,59 +328,73 @@ const getStockLedger = async (req, res, next) => {
 // @route   GET /api/reports/stock/movement
 // @access  Private
 const getStockMovement = async (req, res, next) => {
-  // Essentially the same as ledger but aggregated or structured differently. 
-  // We can reuse getStockLedger logic or just send the same ledger but group it in frontend.
-  // We'll just call the same logic as ledger for this MVP, but map it to what the frontend expects.
   try {
-    const [purchases, sales] = await Promise.all([
-      Purchase.find({ company: req.user?.companyId }).populate('orderItems.product', 'productName sku productCode'),
-      Sale.find({ company: req.user?.companyId }).populate('orderItems.product', 'productName sku productCode')
+    const [purchases, sales, entries] = await Promise.all([
+      Purchase.find({ company: req.user?.companyId })
+        .populate('orderItems.product', 'productName sku productCode'),
+      Sale.find({ company: req.user?.companyId })
+        .populate('orderItems.product', 'productName sku productCode'),
+      StockEntry.find({ company: req.user?.companyId })
     ]);
 
     const movement = [];
-    
-    // Purchases (Inward)
+
+    // Purchases → IN
     purchases.forEach(p => {
       p.orderItems?.forEach(item => {
-        if(item.product) {
+        if (item.product) {
           movement.push({
             date: p.purchaseDate || p.createdAt,
-            refNo: p.referenceNo,
-            type: 'INWARD',
-            source: p.supplier || 'Supplier',
-            destination: p.warehouse || 'Main',
-            item: item.product.productName,
-            qty: item.quantity,
-            status: p.purchaseStatus
+            reference: p.referenceNo || p.purchaseNo || '',
+            movementType: 'IN',
+            productName: item.product.productName || item.name || '',
+            sku: item.product.sku || item.product.productCode || item.code || '',
+            qty: item.quantity || 0,
+            warehouse: p.warehouse || '',
+            remark: 'Purchase from supplier'
           });
         }
       });
     });
 
-    // Sales (Outward)
+    // Sales → OUT
     sales.forEach(s => {
       s.orderItems?.forEach(item => {
-        if(item.product) {
+        if (item.product) {
           movement.push({
             date: s.saleDate || s.createdAt,
-            refNo: s.invoiceNo,
-            type: 'OUTWARD',
-            source: s.warehouse || 'Main',
-            destination: s.customer || 'Customer',
-            item: item.product.productName,
-            qty: item.quantity,
-            status: s.saleStatus
+            reference: s.invoiceNo || '',
+            movementType: 'OUT',
+            productName: item.product.productName || item.name || '',
+            sku: item.product.sku || item.product.productCode || item.code || '',
+            qty: item.quantity || 0,
+            warehouse: s.warehouse || '',
+            remark: 'Sale to customer'
           });
         }
+      });
+    });
+
+    // Stock Entries → IN / OUT
+    entries.forEach(e => {
+      const isOut = e.stockType === 'Stock Transfer' || e.stockType === 'Outward';
+      e.products?.forEach(item => {
+        movement.push({
+          date: e.stockDate || e.createdAt,
+          reference: e.stockNo || '',
+          movementType: isOut ? 'OUT' : 'IN',
+          productName: item.product || item.name || '',
+          sku: item.sku || item.code || '',
+          qty: item.qty || 0,
+          warehouse: e.locationWarehouse || e.warehouseBase || '',
+          remark: e.stockType || 'Stock Entry'
+        });
       });
     });
 
     movement.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    res.json({
-      success: true,
-      data: movement
-    });
+    res.json({ success: true, data: movement });
   } catch (error) {
     next(error);
   }
@@ -387,16 +405,16 @@ const getStockMovement = async (req, res, next) => {
 // @access  Private
 const getStockValuation = async (req, res, next) => {
   try {
-    const products = await Product.find({ 
-      company: req.user?.companyId, 
-      isActive: true 
+    const products = await Product.find({
+      company: req.user?.companyId,
+      isActive: true
     });
 
     const stockDetails = products.map(product => {
       const qty = product.currentStock || 0;
       const cost = parseFloat(product.productCost) || 0;
       const retail = parseFloat(product.productPrice) || 0;
-      
+
       return {
         productId: product._id,
         name: product.productName,
@@ -431,53 +449,45 @@ const getStockValuation = async (req, res, next) => {
 // @access  Private
 const getWarehouseWiseStock = async (req, res, next) => {
   try {
-    // In this ERP, since currentStock is global in Product, we approximate warehouse stock
-    // by using Purchases and StockEntries. Or we just mock a distribution for MVP if warehouse stock isn't explicitly stored.
-    // Let's create a simple distribution based on currentStock and put it all in "Main Warehouse" for now,
-    // because real warehouse stock arrays don't exist in Product model!
-    
-    const products = await Product.find({ 
-      company: req.user?.companyId, 
-      isActive: true 
+    const products = await Product.find({
+      company: req.user?.companyId,
+      isActive: true
     }).populate('category', 'name');
 
-    const warehouseMap = {};
+    const result = [];
 
     products.forEach(product => {
-      const warehouse = product.initialStockWarehouse || 'Main Warehouse'; // default
-      if (!warehouseMap[warehouse]) {
-        warehouseMap[warehouse] = [];
-      }
-      
-      warehouseMap[warehouse].push({
-        sku: product.sku || product.productCode,
-        item: product.productName,
-        category: product.category?.name || 'N/A',
-        qty: product.currentStock || 0,
-        value: (product.currentStock || 0) * (parseFloat(product.productCost) || 0)
-      });
-    });
+      const cost = parseFloat(product.productCost) || 0;
 
-      // Format for frontend
-      const result = [];
-      Object.keys(warehouseMap).forEach(w => {
-        const items = warehouseMap[w];
-        const itemCount = items.length;
-        const totalQty = items.reduce((acc, curr) => acc + curr.qty, 0);
-        const value = items.reduce((acc, curr) => acc + curr.value, 0);
-
-        result.push({
-          warehouse: w,
-          itemCount,
-          totalQty,
-          value
+      // Product mein warehouseStocks array hai — usse use karo
+      if (product.warehouseStocks && product.warehouseStocks.length > 0) {
+        product.warehouseStocks.forEach(ws => {
+          const qty = ws.stock || 0;
+          result.push({
+            warehouse: ws.warehouse || 'Main Warehouse',
+            productName: product.productName || '',
+            sku: product.sku || product.productCode || '',
+            category: product.category?.name || 'N/A',
+            qty,
+            value: qty * cost
+          });
         });
-      });
-
-      res.json({
-      success: true,
-      data: result
+      } else {
+        // Fallback: agar warehouseStocks nahi hai toh currentStock use karo
+        const qty = product.currentStock || 0;
+        result.push({
+          warehouse: product.initialStockWarehouse || 'Main Warehouse',
+          productName: product.productName || '',
+          sku: product.sku || product.productCode || '',
+          category: product.category?.name || 'N/A',
+          qty,
+          value: qty * cost
+        });
+      }
     });
+
+    // Zero stock wale bhi dikhao (filter optional)
+    res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
@@ -489,9 +499,9 @@ const getWarehouseWiseStock = async (req, res, next) => {
 const getBranchWiseStock = async (req, res, next) => {
   try {
     // Similar to warehouse wise, we'll map to a default branch if none exists
-    const products = await Product.find({ 
-      company: req.user?.companyId, 
-      isActive: true 
+    const products = await Product.find({
+      company: req.user?.companyId,
+      isActive: true
     });
 
     const branchMap = {};
@@ -501,7 +511,7 @@ const getBranchWiseStock = async (req, res, next) => {
       if (!branchMap[branch]) {
         branchMap[branch] = [];
       }
-      
+
       branchMap[branch].push({
         qty: product.currentStock || 0,
         value: (product.currentStock || 0) * (parseFloat(product.productCost) || 0)
@@ -514,7 +524,7 @@ const getBranchWiseStock = async (req, res, next) => {
       const itemCount = items.length;
       const totalQty = items.reduce((acc, curr) => acc + curr.qty, 0);
       const value = items.reduce((acc, curr) => acc + curr.value, 0);
-      
+
       // Mock health status
       let status = 'Healthy';
       if (totalQty === 0) status = 'Critical';
@@ -543,17 +553,17 @@ const getBranchWiseStock = async (req, res, next) => {
 // @access  Private
 const getProductWiseStock = async (req, res, next) => {
   try {
-    const products = await Product.find({ 
-      company: req.user?.companyId, 
-      isActive: true 
+    const products = await Product.find({
+      company: req.user?.companyId,
+      isActive: true
     }).populate('category', 'name').populate('brand', 'name');
 
     const productStock = products.map(product => {
       const currentStock = parseFloat(product.currentStock || 0);
-      const purchasePrice = parseFloat(product.purchasePrice || 0);
+      const purchasePrice = parseFloat(product.productCost || product.purchasePrice || 0);
       const alertQuantity = parseFloat(product.alertQuantity || 0);
       const value = currentStock * purchasePrice;
-      
+
       let status = 'In Stock';
       if (currentStock <= 0) {
         status = 'Critical';
@@ -562,8 +572,8 @@ const getProductWiseStock = async (req, res, next) => {
       }
 
       return {
-        sku: product.itemCode || product.sku || 'N/A',
-        name: product.name,
+        sku: product.itemCode || product.sku || product.productCode || 'N/A',
+        name: product.productName || product.name || 'Unknown',
         category: product.category ? product.category.name : 'Uncategorized',
         warehouse: product.warehouse || 'Main Hub',
         qty: currentStock,
@@ -589,23 +599,27 @@ const getOverstockReport = async (req, res, next) => {
   try {
     const products = await Product.find({ company: req.user?.companyId, isActive: true })
       .populate("category", "name");
-    
+
     const overstockProducts = products.filter(p => {
       const current = p.currentStock || 0;
       const alert = parseFloat(p.alertQuantity || 0);
       return alert > 0 && current > alert * 3;
     });
 
-    const result = overstockProducts.map(p => ({
-      id: p._id,
-      sku: p.sku || p.productCode,
-      name: p.productName,
-      category: p.category?.name || "N/A",
-      currentStock: p.currentStock || 0,
-      alertQuantity: p.alertQuantity || 0,
-      surplus: (p.currentStock || 0) - (p.alertQuantity || 0) * 3,
-      status: "Overstocked"
-    }));
+    const result = overstockProducts.map(p => {
+      const currentStock = p.currentStock || 0;
+      const maxStock = parseFloat(p.alertQuantity || 0) * 3;
+      return {
+        id: p._id,
+        sku: p.sku || p.productCode,
+        name: p.productName,
+        category: p.category?.name || 'N/A',
+        currentStock,
+        maxStock,                         // ✅ FIX: alertQuantity → maxStock
+        excess: currentStock - maxStock,  // ✅ FIX: surplus → excess
+        status: 'Overstocked'
+      };
+    });
 
     res.json({ success: true, data: result });
   } catch (error) { next(error); }
@@ -618,67 +632,146 @@ const getOutOfStockReport = async (req, res, next) => {
   try {
     const products = await Product.find({ company: req.user?.companyId, isActive: true })
       .populate("category", "name");
-    
+
     const outOfStockProducts = products.filter(p => (p.currentStock || 0) <= 0);
 
     const result = outOfStockProducts.map(p => ({
       id: p._id,
       sku: p.sku || p.productCode,
       name: p.productName,
-      category: p.category?.name || "N/A",
-      lastRestocked: p.updatedAt,
-      status: "Out of Stock"
+      category: p.category?.name || 'N/A',
+      lastStockDate: p.updatedAt,   // ✅ FIX: lastRestocked → lastStockDate
+      status: 'Out of Stock'
     }));
 
     res.json({ success: true, data: result });
   } catch (error) { next(error); }
 };
 
-// @desc    Get Damaged Stock Report
+// @desc    Get Damaged Stock Report (from Adjustment model - items with negative qty)
 // @route   GET /api/reports/stock/damaged
 // @access  Private
 const getDamagedStockReport = async (req, res, next) => {
   try {
-    res.json({ success: true, data: [
-      { id: "1", date: new Date().toISOString(), sku: "PRD-001", name: "Sample Product A", qty: 2, reason: "Transit Damage", value: 1500, loggedBy: "Admin" },
-      { id: "2", date: new Date().toISOString(), sku: "PRD-005", name: "Sample Product B", qty: 5, reason: "Warehouse Mishap", value: 3000, loggedBy: "User" }
-    ]});
+    const { Adjustment } = require('../models/Product');
+    const adjustments = await Adjustment.find({ company: req.user?.companyId }).sort({ createdAt: -1 });
+    const data = [];
+    adjustments.forEach(adj => {
+      adj.items.forEach(item => {
+        if ((item.quantity || 0) < 0) {
+          data.push({
+            id: adj._id,
+            date: adj.createdAt,
+            sku: item.code || 'N/A',
+            productName: item.name || 'Unknown',   // ✅ FIX: name → productName
+            qtyDamaged: Math.abs(item.quantity || 0), // ✅ FIX: qty → qtyDamaged
+            reason: adj.note || 'Adjustment',
+            valueLost: Math.abs(item.quantity || 0) * (item.cost || 0), // ✅ FIX: value → valueLost
+            warehouse: adj.warehouse,
+            loggedBy: 'Admin'
+          });
+        }
+      });
+    });
+    res.json({ success: true, data });
   } catch (error) { next(error); }
 };
 
-// @desc    Get Expired Stock Report
+// @desc    Get Expired Stock Report (products with hasBatchAndExpiry)
 // @route   GET /api/reports/stock/expired
 // @access  Private
 const getExpiredStockReport = async (req, res, next) => {
   try {
-    res.json({ success: true, data: [
-      { id: "1", batchNo: "B-2023-01", sku: "PRD-010", name: "Chemical X", qty: 50, expiryDate: "2023-12-31", value: 5000, status: "Expired" },
-      { id: "2", batchNo: "B-2024-05", sku: "PRD-012", name: "Solution Y", qty: 20, expiryDate: "2024-05-15", value: 1200, status: "Expired" }
-    ]});
+    const products = await Product.find({
+      company: req.user?.companyId,
+      isActive: true,
+      hasBatchAndExpiry: true
+    }).populate('category', 'name');
+    const data = products.map(p => ({
+      id: p._id,
+      sku: p.sku || p.productCode,
+      name: p.productName,
+      category: p.category?.name || 'N/A',
+      qty: p.currentStock || 0,
+      value: (p.currentStock || 0) * (parseFloat(p.productCost) || 0),
+      status: 'Check Expiry'
+    }));
+    res.json({ success: true, data });
   } catch (error) { next(error); }
 };
 
-// @desc    Get Stock Adjustment Report
+// @desc    Get Stock Adjustment Report (from Adjustment model - real DB)
 // @route   GET /api/reports/stock/adjustment
 // @access  Private
 const getStockAdjustmentReport = async (req, res, next) => {
   try {
-    res.json({ success: true, data: [
-      { id: "1", date: new Date().toISOString(), sku: "PRD-020", name: "Item C", type: "Addition", qty: 10, reason: "Found in Audit", adjustedBy: "Admin" },
-      { id: "2", date: new Date().toISOString(), sku: "PRD-021", name: "Item D", type: "Deduction", qty: -2, reason: "Missing count", adjustedBy: "Admin" }
-    ]});
+    const { Adjustment } = require('../models/Product');
+    const adjustments = await Adjustment.find({ company: req.user?.companyId }).sort({ createdAt: -1 });
+    const data = [];
+    adjustments.forEach(adj => {
+      adj.items.forEach(item => {
+        data.push({
+          id: adj._id,
+          date: adj.createdAt,
+          sku: item.code || 'N/A',
+          productName: item.name || 'Unknown',   // ✅ FIX: name → productName
+          adjustmentType: (item.quantity || 0) >= 0 ? 'Addition' : 'Deduction', // ✅ FIX: type → adjustmentType
+          qty: item.quantity || 0,
+          reason: adj.note || 'Manual Adjustment',
+          warehouse: adj.warehouse,
+          adjustedBy: 'Admin'
+        });
+      });
+    });
+    res.json({ success: true, data });
   } catch (error) { next(error); }
 };
 
-// @desc    Get Stock Transfer Report
+// @desc    Get Stock Transfer Report (from StockTransfer model - real DB)
 // @route   GET /api/reports/stock/transfer
 // @access  Private
 const getStockTransferReport = async (req, res, next) => {
   try {
-    res.json({ success: true, data: [
-      { id: "1", date: new Date().toISOString(), referenceNo: "TRF-1001", fromWarehouse: "Main Hub", toWarehouse: "Retail East", status: "Completed", itemsCount: 5, totalValue: 12500 },
-      { id: "2", date: new Date().toISOString(), referenceNo: "TRF-1002", fromWarehouse: "Retail West", toWarehouse: "Main Hub", status: "In Transit", itemsCount: 2, totalValue: 4000 }
-    ]});
+    const { StockTransfer } = require('../models/StockTransfer');
+    const transfers = await StockTransfer.find().sort({ createdAt: -1 });
+
+    const data = [];
+
+    transfers.forEach(t => {
+      if (t.items && t.items.length > 0) {
+        // ✅ FIX: Har item ke liye ek row — productName, sku, qty sab aa jayega
+        t.items.forEach(item => {
+          data.push({
+            id: t._id,
+            date: t.date || t.createdAt,
+            referenceNo: t.transferNo || '',
+            fromWarehouse: t.fromWarehouse || '',
+            toWarehouse: t.toWarehouse || '',
+            productName: item.product || '',  // ✅ FIX: product string name
+            sku: item.product || '',          // StockTransfer model mein sku nahi, product name hi sku ki jagah
+            qty: item.qty || 0,              // ✅ FIX: itemsCount → qty
+            status: t.status || 'Pending',
+            remarks: t.remarks || ''
+          });
+        });
+      } else {
+        // Agar items nahi hain toh ek summary row
+        data.push({
+          id: t._id,
+          date: t.date || t.createdAt,
+          referenceNo: t.transferNo || '',
+          fromWarehouse: t.fromWarehouse || '',
+          toWarehouse: t.toWarehouse || '',
+          productName: '-',
+          sku: '-',
+          qty: 0,
+          status: t.status || 'Pending',
+          remarks: t.remarks || ''
+        });
+      }
+    });
+
+    res.json({ success: true, data });
   } catch (error) { next(error); }
 };
 

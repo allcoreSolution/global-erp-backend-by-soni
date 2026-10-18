@@ -7,7 +7,9 @@ const {
   getBackups,
   createBackup,
   restoreBackup,
-  uploadBackup
+  uploadBackup,
+  downloadBackup,
+  deleteBackup
 } = require('../controllers/backupController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
@@ -16,7 +18,9 @@ router.use(protect); // Ensure user is authenticated
 // Routes
 router.get('/', getBackups);
 router.post('/create', createBackup);
+router.get('/download/:version', downloadBackup);
 router.post('/restore/:version', restoreBackup);
 router.post('/upload', upload.single('file'), uploadBackup);
+router.delete('/:id', deleteBackup);
 
 module.exports = router;

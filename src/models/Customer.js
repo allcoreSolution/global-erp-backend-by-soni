@@ -42,8 +42,6 @@ const customerSchema = new mongoose.Schema({
   creditPeriod: { type: Number, default: 0 },
   openingBalance: { type: Number, default: 0 },
   balanceType: { type: String, enum: ['Dr', 'Cr', 'Dr (Receivable)', 'Cr (Payable)'], default: 'Dr' },
-  priceList: { type: String, default: '' },
-  discount: { type: Number, default: 0 },
   warehouseAddress: { type: String, default: '' },
   stockLocation: { type: String, default: '' },
   

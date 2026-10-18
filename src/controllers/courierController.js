@@ -5,9 +5,22 @@ const { Courier } = require('../models/Courier');
 // @access  Private
 const createCourier = async (req, res, next) => {
   try {
+    let code = req.body.courierCode;
+    if (!code) {
+      const count = await Courier.countDocuments();
+      code = `CR-${String(count + 1).padStart(5, '0')}`;
+    } else {
+      const existing = await Courier.findOne({ courierCode: code });
+      if (existing) {
+        const count = await Courier.countDocuments();
+        code = `CR-${String(count + 1).padStart(5, '0')}`;
+      }
+    }
+
     const newCourier = await Courier.create({
       ...req.body,
-      company: req.user?.companyId || req.body.company
+      courierCode: code,
+      company: req.user?.companyId || req.user?.company || req.body.company
     });
 
     res.status(201).json({ success: true, data: newCourier });

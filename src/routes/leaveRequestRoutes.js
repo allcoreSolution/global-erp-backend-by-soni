@@ -9,10 +9,10 @@ const {
 } = require('../controllers/leaveRequestController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.post('/', protect, checkPermission('manage_hrms'), addLeaveRequest);
-router.get('/', protect, checkPermission('manage_hrms'), getLeaveRequests);
-router.get('/:id', protect, checkPermission('manage_hrms'), getLeaveRequestById);
-router.put('/:id', protect, checkPermission('manage_hrms'), updateLeaveRequest);
-router.delete('/:id', protect, checkPermission('manage_hrms'), deleteLeaveRequest);
+router.post('/', protect, checkPermission('create_leave'), addLeaveRequest);
+router.get('/', protect, checkPermission('view_leave'), getLeaveRequests);
+router.get('/:id', protect, checkPermission('view_leave'), getLeaveRequestById);
+router.put('/:id', protect, checkPermission('edit_leave'), updateLeaveRequest);
+router.delete('/:id', protect, checkPermission('delete_leave'), deleteLeaveRequest);
 
 module.exports = router;

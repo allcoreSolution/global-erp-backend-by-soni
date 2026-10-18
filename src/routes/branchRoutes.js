@@ -11,12 +11,12 @@ const {
 } = require('../controllers/branchController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
 
-router.get('/', protect, getBranches);
-router.post('/bulk', protect, checkPermission('manage_settings'), bulkImportBranches);
-router.get('/:id', protect, getBranchById);
-router.post('/', protect, checkPermission('manage_settings'), createBranch);
-router.put('/:id', protect, checkPermission('manage_settings'), updateBranch);
-router.patch('/:id', protect, checkPermission('manage_settings'), patchBranch);
-router.delete('/:id', protect, checkPermission('manage_settings'), deleteBranch);
+router.get('/', protect, checkPermission('view_branches'), getBranches);
+router.post('/bulk', protect, checkPermission('create_branches'), bulkImportBranches);
+router.get('/:id', protect, checkPermission('view_branches'), getBranchById);
+router.post('/', protect, checkPermission('create_branches'), createBranch);
+router.put('/:id', protect, checkPermission('edit_branches'), updateBranch);
+router.patch('/:id', protect, checkPermission('edit_branches'), patchBranch);
+router.delete('/:id', protect, checkPermission('delete_branches'), deleteBranch);
 
 module.exports = router;

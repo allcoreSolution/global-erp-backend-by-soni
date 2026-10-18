@@ -1,101 +1,222 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-dotenv.config();
 
-const ProductFile = require('./src/models/Product');
-const Product = ProductFile.Product || ProductFile;
-const Category = ProductFile.Category || ProductFile; // Assuming Category is in same file or another
+// Import models
+const CompanyReq = require('./src/models/Company');
+const BranchReq = require('./src/models/Branch');
+const WarehouseReq = require('./src/models/Warehouse');
+const SupplierReq = require('./src/models/Supplier');
+const CustomerReq = require('./src/models/Customer'); 
+const EmployeeReq = require('./src/models/Employee');
+const BillerReq = require('./src/models/Biller');
+const ProductReq = require('./src/models/Product');
+const SaleReq = require('./src/models/Sale');
 
-const CustomerFile = require('./src/models/Customer');
-const Customer = CustomerFile.Customer || CustomerFile;
+const Company = CompanyReq.Company || CompanyReq;
+const Branch = BranchReq.Branch || BranchReq;
+const Warehouse = WarehouseReq.Warehouse || WarehouseReq;
+const Supplier = SupplierReq.Supplier || SupplierReq;
+const Customer = CustomerReq.Customer || CustomerReq;
+const Employee = EmployeeReq.Employee || EmployeeReq;
+const Biller = BillerReq.Biller || BillerReq;
+const Product = ProductReq.Product || ProductReq;
+const Sale = SaleReq.Sale || SaleReq;
 
-const SupplierFile = require('./src/models/Supplier');
-const Supplier = SupplierFile.Supplier || SupplierFile;
-
-const SaleFile = require('./src/models/Sale');
-const Sale = SaleFile.Sale || SaleFile;
-
-const PurchaseFile = require('./src/models/Purchase');
-const Purchase = PurchaseFile.Purchase || PurchaseFile;
-
-const ExpenseCategoryFile = require('./src/models/ExpenseCategory');
-const ExpenseCategory = ExpenseCategoryFile.ExpenseCategory || ExpenseCategoryFile;
-
-const ExpenseClaimFile = require('./src/models/ExpenseClaim');
-const ExpenseClaim = ExpenseClaimFile.ExpenseClaim || ExpenseClaimFile;
-
-const CompanyFile = require('./src/models/Company');
-const Company = CompanyFile.Company || CompanyFile;
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/erp_global');
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
+  }
+};
 
 const seedData = async () => {
+  try {
+    await connectDB();
+    console.log('Clearing existing seed data...');
+    await Company.deleteMany({});
+    await Branch.deleteMany({});
+    await Warehouse.deleteMany({});
+    await Supplier.deleteMany({});
+    await Customer.deleteMany({});
+    await Employee.deleteMany({});
+    if (Biller && typeof Biller.deleteMany === 'function') await Biller.deleteMany({});
+    await Product.deleteMany({});
+    await Sale.deleteMany({});
+
+    // 1. Create Company
+    const company = await Company.create({
+      id: 'COMP-01',
+      name: 'Global ERP Solutions',
+      code: 'GES-01',
+      email: 'admin@globalerp.com',
+      phone: '9876543210',
+      address: '123 Business Park, City Center',
+    });
+    console.log('Created Company:', company.name);
+
+    // 2. Create Branch
+    const branch = await Branch.create({
+      id: 'BR-01',
+      name: 'Mumbai HQ',
+      code: 'B-HQ-01',
+      company: company._id,
+      email: 'mumbai@globalerp.com',
+      phone: '1111111111',
+      address: 'Floor 5, Building A',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      country: 'India'
+    });
+    console.log('Created Branch:', branch.name);
+
+    // 3. Create Warehouse
+    const warehouse = await Warehouse.create({
+      id: 'WH-01',
+      name: 'Main Depot Mumbai',
+      code: 'WH-01',
+      branch: branch._id,
+      company: company._id,
+      phone: '2222222222',
+      email: 'wh@globalerp.com',
+      address: 'Industrial Area, Phase 1',
+    });
+    console.log('Created Warehouse:', warehouse.name);
+
+    // 4. Create Supplier
+    const supplier = await Supplier.create({
+      id: 'SUP-01',
+      supplierCode: 'SUP-001',
+      companyName: 'Tech Suppliers Inc',
+      name: 'Tech Suppliers Inc',
+      company: company._id,
+      email: 'sales@techsuppliers.com',
+      phone: '9876500001',
+      address: '45 Supplier Road',
+    });
+    console.log('Created Supplier:', supplier.name);
+
+    // 5. Create Customer
+    const customer = await Customer.create({
+      id: 'CUST-01',
+      customerCode: 'CUST-001',
+      name: 'Ramesh Sharma',
+      email: 'ramesh@example.com',
+      phone: '9876500002',
+      company: company._id,
+      billingAddress: {
+        street: '12 Customer St',
+        city: 'Pune',
+        state: 'Maharashtra',
+        country: 'India',
+        zipCode: '411001'
+      }
+    });
+    console.log('Created Customer:', customer.name);
+
+    // 6. Create Employee
+    const employee = await Employee.create({
+      id: 'EMP-01',
+      employeeId: 'EMP-001',
+      employeeCode: 'EMP-001',
+      employeeName: 'Amit Kumar',
+      name: 'Amit Kumar',
+      email: 'amit@globalerp.com',
+      phone: '9876500003',
+      branch: branch._id,
+      company: company._id,
+      designation: 'Sales Executive'
+    });
+    console.log('Created Employee:', employee.name);
+
+    let biller = null;
     try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log("Connected to MongoDB!");
-
-        let company = await Company.findOne({});
-        if (!company) {
-            company = await Company.create({ name: 'Default Seed Company', address: 'Seed City', phone: '1111111111', email: 'seed@seed.com' });
-        }
-        const compId = company._id;
-
-        const cust = await Customer.create({ name: 'John Doe', phone: '1234567890', customerCode: 'CUST-002', company: compId }).catch(e => { console.log('Customer skip:', e.message); return Customer.findOne(); });
-        
-        const sup = await Supplier.create({ name: 'Acme Corp', companyName: 'Acme Corp', phone: '0987654321', supplierCode: 'SUP-002', company: compId }).catch(e => { console.log('Supplier skip:', e.message); return Supplier.findOne(); });
-
-        let cat = await mongoose.model('Category').findOne({});
-        if (!cat) {
-            cat = await mongoose.model('Category').create({ name: 'Electronics', company: compId }).catch(() => null);
-        }
-
-        const prod = await Product.create({ 
-            productName: 'Laptop Pro X', 
-            name: 'Laptop Pro X',
-            productCode: 'PROD-001',
-            sku: 'LT-PRO-X',
-            category: cat ? cat._id : null,
-            costPrice: 50000,
-            salePrice: 75000,
-            currentStock: 10,
-            company: compId 
-        }).catch(e => { console.log('Product skip:', e.message); return Product.findOne(); });
-
-        let prodId = prod ? prod._id : null;
-
-        if (cust && prodId) {
-            await Sale.create({
-                customer: cust._id,
-                invoiceNo: 'INV-' + Date.now(),
-                totalAmount: 75000,
-                paidAmount: 75000,
-                paymentStatus: 'Paid',
-                status: 'Completed',
-                items: [{ product: prodId, quantity: 1, unitPrice: 75000, total: 75000 }],
-                company: compId,
-                date: new Date()
-            }).catch(e => console.log('Sale skip:', e.message));
-        }
-
-        if (sup && prodId) {
-            await Purchase.create({
-                supplier: sup._id,
-                billNo: 'BILL-' + Date.now(),
-                purchaseOrderNo: 'PO-' + Date.now(),
-                totalAmount: 500000,
-                paidAmount: 250000,
-                paymentStatus: 'Partial',
-                status: 'Received',
-                items: [{ product: prodId, quantity: 10, unitPrice: 50000, total: 500000 }],
-                company: compId,
-                date: new Date()
-            }).catch(e => console.log('Purchase skip:', e.message));
-        }
-
-        console.log("Seeding complete!");
-        process.exit(0);
+      if (Biller && typeof Biller.create === 'function') {
+        biller = await Biller.create({
+          id: 'BIL-01',
+          name: 'Amit Kumar (Biller)',
+          email: 'amit@globalerp.com',
+          phone: '9876500003',
+          branch: branch._id,
+          company: company._id
+        });
+        console.log('Created Biller:', biller.name);
+      }
     } catch (e) {
-        console.error(e);
-        process.exit(1);
+      console.log('Biller creation skipped', e.message);
     }
+
+    // 7. Create Product
+    const product = await Product.create({
+      id: 'PROD-01',
+      productName: 'Wireless Mouse',
+      productCode: 'PROD-001',
+      name: 'Wireless Mouse',
+      code: 'PROD-001',
+      type: 'Standard',
+      barcodeSymbology: 'CODE128',
+      brand: null,
+      category: null,
+      unit: null,
+      cost: 250,
+      price: 500,
+      alertQuantity: 10,
+      taxMethod: 'Exclusive',
+      company: company._id,
+      productDetails: 'High quality wireless mouse',
+      isAvailable: true,
+      warehouseStocks: [{
+         warehouse: warehouse._id,
+         stock: 100
+      }]
+    });
+    console.log('Created Product:', product.name);
+
+    // 8. Create Sale (Invoice)
+    const sale = await Sale.create({
+      id: 'INV-01',
+      invoiceNo: 'INV-' + Math.floor(1000 + Math.random() * 9000),
+      date: new Date(),
+      referenceNo: 'INV-' + Math.floor(1000 + Math.random() * 9000),
+      customer: customer._id,
+      biller: biller ? biller._id : employee._id, // fallback to employee
+      warehouse: warehouse._id,
+      branch: branch._id,
+      company: company._id,
+      orderItems: [{
+        product: product._id,
+        name: product.name,
+        code: product.code,
+        quantity: 5,
+        netUnitPrice: 500,
+        unitPrice: 500,
+        taxRate: 0,
+        taxAmount: 0,
+        discount: 0,
+        subtotal: 2500
+      }],
+      totalItems: 5,
+      totalQuantity: 5,
+      totalAmount: 2500,
+      orderDiscount: 0,
+      orderDiscountType: 'Flat',
+      shippingCost: 0,
+      grandTotal: 2500,
+      saleStatus: 'Completed',
+      paymentStatus: 'Pending',
+      currency: 'INR'
+    });
+    console.log('Created Sale (Invoice):', sale.referenceNo);
+
+    console.log('\n--- SUCCESS ---');
+    console.log('All dummy data created successfully! You can now use these in the software.');
+    process.exit(0);
+  } catch (error) {
+    console.error('Error seeding data:', error);
+    process.exit(1);
+  }
 };
 
 seedData();

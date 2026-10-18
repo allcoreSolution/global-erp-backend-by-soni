@@ -35,6 +35,7 @@ const saleSchema = new mongoose.Schema({
   paymentStatus: { type: String, default: 'Paid' },
   saleNote: { type: String, default: '' },
   staffNote: { type: String, default: '' },
+  documentUrl: { type: String, default: '' },
   subTotal: { type: Number, default: 0 },
   discountTotal: { type: Number, default: 0 },
   taxTotal: { type: Number, default: 0 },

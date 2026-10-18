@@ -32,6 +32,8 @@ const userSchema = new mongoose.Schema({
   department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
   designation: { type: mongoose.Schema.Types.ObjectId, ref: 'Designation' },
   salaryStructure: { type: mongoose.Schema.Types.ObjectId, ref: 'SalaryStructure' },
+  phone: { type: String, trim: true, default: '' },
+  profilePhoto: { type: String, default: '' },
   uanNumber: { type: String, trim: true },
   esiIpNumber: { type: String, trim: true }
 }, { timestamps: true });
