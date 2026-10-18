@@ -584,7 +584,7 @@ async function seed() {
   if (defaultCompany && defaultBranch && defaultWarehouse) {
     console.log('\n--- Injected into Active Company (' + defaultCompany.name + ') for instant browser test ---');
     
-    // Injected Suppliers: Only Prime Furniture Traders & Prime Pharma Laboratories
+    // Injected Suppliers
     const liveSup1 = await Supplier.findOneAndUpdate(
       { supplierCode: 'SUP-LIVE-001' },
       {
@@ -603,6 +603,24 @@ async function seed() {
       { upsert: true, returnDocument: 'after' }
     );
 
+    const liveSup2 = await Supplier.findOneAndUpdate(
+      { supplierCode: 'SUP-LIVE-002' },
+      {
+        supplierCode: 'SUP-LIVE-002',
+        companyName: 'Modern Office Products',
+        contactPerson: 'Suresh Verma',
+        phone: '9876533002',
+        email: 'sales@modernoffice.com',
+        gstin: '09BBBBM4444B1Z4',
+        paymentTerms: 'Net 30',
+        creditLimit: 150000,
+        balance: 21920,
+        company: defaultCompany._id,
+        billingAddress: { city: 'Kanpur', state: 'Uttar Pradesh', country: 'India' }
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
     const liveSup3 = await Supplier.findOneAndUpdate(
       { supplierCode: 'SUP-LIVE-003' },
       {
@@ -617,6 +635,24 @@ async function seed() {
         balance: 38000,
         company: defaultCompany._id,
         billingAddress: { city: 'Lucknow', state: 'Uttar Pradesh', country: 'India' }
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    const liveSup4 = await Supplier.findOneAndUpdate(
+      { supplierCode: 'SUP-LIVE-004' },
+      {
+        supplierCode: 'SUP-LIVE-004',
+        companyName: 'Modern Healthcare Distributors',
+        contactPerson: 'Anil Gupta',
+        phone: '9876511002',
+        email: 'sales@modernhealthcare.com',
+        gstin: '09AAACM2222A1Z2',
+        paymentTerms: 'Net 30',
+        creditLimit: 150000,
+        balance: 21920,
+        company: defaultCompany._id,
+        billingAddress: { city: 'Kanpur', state: 'Uttar Pradesh', country: 'India' }
       },
       { upsert: true, returnDocument: 'after' }
     );
@@ -650,6 +686,33 @@ async function seed() {
     );
 
     await Purchase.findOneAndUpdate(
+      { purchaseNo: 'PUR-LIVE-MOP-001' },
+      {
+        purchaseDate: '2026-04-06',
+        referenceNo: 'MOP-001',
+        purchaseNo: 'PUR-LIVE-MOP-001',
+        company: defaultCompany._id,
+        branch: defaultBranch._id,
+        warehouse: defaultWarehouse._id,
+        supplier: liveSup2._id,
+        purchaseStatus: 'Received',
+        paymentStatus: 'Partial',
+        grandTotal: 64900,
+        amountPaid: 30000,
+        orderTax: '18%',
+        orderItems: [{
+          name: 'Office Chair - Model A',
+          code: 'CHAIR-A',
+          quantity: 50,
+          netUnitCost: 1100,
+          taxPercent: 18,
+          productPrice: 1600
+        }]
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    await Purchase.findOneAndUpdate(
       { purchaseNo: 'PUR-LIVE-PPL-001' },
       {
         purchaseDate: '2026-04-04',
@@ -676,7 +739,201 @@ async function seed() {
       { upsert: true, returnDocument: 'after' }
     );
 
-    console.log('✓ Successfully injected into active company!');
+    await Purchase.findOneAndUpdate(
+      { purchaseNo: 'PUR-LIVE-MHD-001' },
+      {
+        purchaseDate: '2026-04-06',
+        referenceNo: 'MHD-001',
+        purchaseNo: 'PUR-LIVE-MHD-001',
+        company: defaultCompany._id,
+        branch: defaultBranch._id,
+        warehouse: defaultWarehouse._id,
+        supplier: liveSup4._id,
+        purchaseStatus: 'Received',
+        paymentStatus: 'Partial',
+        grandTotal: 64900,
+        amountPaid: 30000,
+        orderTax: '18%',
+        orderItems: [{
+          name: 'Pharma Tablet A - Demo',
+          code: 'PT-A',
+          quantity: 50,
+          netUnitCost: 1100,
+          taxPercent: 18,
+          productPrice: 1600
+        }]
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    // Injected Products for active company
+    let liveCat = await Category.findOne({ name: 'Commercial Goods', company: defaultCompany._id });
+    if (!liveCat) liveCat = await Category.create({ name: 'Commercial Goods', company: defaultCompany._id });
+
+    let liveBrand = await Brand.findOne({ name: 'Global Brand', company: defaultCompany._id });
+    if (!liveBrand) liveBrand = await Brand.create({ name: 'Global Brand', company: defaultCompany._id });
+
+    const liveProdChair = await Product.findOneAndUpdate(
+      { productCode: 'CHAIR-LIVE-A', company: defaultCompany._id },
+      {
+        productName: 'Office Chair - Model A',
+        productCode: 'CHAIR-LIVE-A',
+        sku: 'SKU-LIVE-CHAIR-A',
+        productUnit: 'PCS',
+        productCost: '1000',
+        productPrice: '1500',
+        productTax: '18%',
+        currentStock: 150,
+        category: liveCat._id,
+        brand: liveBrand._id,
+        company: defaultCompany._id
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    const liveProdPharma = await Product.findOneAndUpdate(
+      { productCode: 'PT-LIVE-A', company: defaultCompany._id },
+      {
+        productName: 'Pharma Tablet A - Demo',
+        productCode: 'PT-LIVE-A',
+        sku: 'SKU-LIVE-PTA-01',
+        productUnit: 'BOX',
+        productCost: '1000',
+        productPrice: '1500',
+        productTax: '18%',
+        currentStock: 150,
+        category: liveCat._id,
+        brand: liveBrand._id,
+        hasBatchAndExpiry: true,
+        company: defaultCompany._id
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    // Injected Customers for active company
+    const liveCus1 = await Customer.findOneAndUpdate(
+      { customerCode: 'CUS-LIVE-001' },
+      {
+        customerCode: 'CUS-LIVE-001',
+        name: 'Bright Academy',
+        ownerName: 'Director Admin',
+        phone: '9876544001',
+        email: 'admin@brightacademy.edu',
+        pan: 'BBBBA1111B',
+        creditPeriod: 15,
+        creditLimit: 200000,
+        openingBalance: 0,
+        company: defaultCompany._id,
+        billingAddress: { street: 'Aliganj', city: 'Lucknow', state: 'Uttar Pradesh', zip: '226024' }
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    const liveCus2 = await Customer.findOneAndUpdate(
+      { customerCode: 'CUS-LIVE-002' },
+      {
+        customerCode: 'CUS-LIVE-002',
+        name: 'City Care Medical Store',
+        ownerName: 'Dr. R. K. Sharma',
+        phone: '9876522001',
+        email: 'citycare@gmail.com',
+        pan: 'AAAAA1111A',
+        creditPeriod: 15,
+        creditLimit: 200000,
+        openingBalance: 0,
+        company: defaultCompany._id,
+        billingAddress: { street: 'Hazratganj', city: 'Lucknow', state: 'Uttar Pradesh', zip: '226001' }
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    // Injected Sales for active company
+    await Sale.findOneAndUpdate(
+      { invoiceNo: 'INV-LIVE-AOS-001' },
+      {
+        invoiceNo: 'INV-LIVE-AOS-001',
+        saleDate: '2026-04-08',
+        referenceNo: 'AOS-001',
+        company: defaultCompany._id,
+        branch: defaultBranch._id,
+        warehouse: defaultWarehouse._id,
+        customer: liveCus1._id,
+        saleStatus: 'Completed',
+        paymentStatus: 'Partial',
+        grandTotal: 106200,
+        amountPaid: 70000,
+        orderTax: '18%',
+        orderItems: [{
+          name: 'Office Chair - Model A',
+          code: 'CHAIR-A',
+          quantity: 60,
+          netUnitPrice: 1500,
+          taxPercent: 18,
+          total: 106200,
+          product: liveProdChair._id
+        }]
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    await Sale.findOneAndUpdate(
+      { invoiceNo: 'INV-LIVE-APD-001' },
+      {
+        invoiceNo: 'INV-LIVE-APD-001',
+        saleDate: '2026-04-08',
+        referenceNo: 'APD-001',
+        company: defaultCompany._id,
+        branch: defaultBranch._id,
+        warehouse: defaultWarehouse._id,
+        customer: liveCus2._id,
+        saleStatus: 'Completed',
+        paymentStatus: 'Partial',
+        grandTotal: 106200,
+        amountPaid: 70000,
+        orderTax: '18%',
+        orderItems: [{
+          name: 'Pharma Tablet A - Demo',
+          code: 'PT-A',
+          quantity: 60,
+          netUnitPrice: 1500,
+          taxPercent: 18,
+          total: 106200,
+          product: liveProdPharma._id
+        }]
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    // Injected Payments to Suppliers
+    await Payment.findOneAndUpdate(
+      { paymentNo: 'PAY-LIVE-001' },
+      {
+        paymentNo: 'PAY-LIVE-001',
+        paymentDate: '2026-04-12',
+        company: defaultCompany._id,
+        supplierParty: liveSup1.companyName,
+        paymentType: 'Supplier',
+        paymentMethod: 'Bank Transfer',
+        paymentAmount: 50000
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    await Payment.findOneAndUpdate(
+      { paymentNo: 'PAY-LIVE-002' },
+      {
+        paymentNo: 'PAY-LIVE-002',
+        paymentDate: '2026-04-12',
+        company: defaultCompany._id,
+        supplierParty: liveSup3.companyName,
+        paymentType: 'Supplier',
+        paymentMethod: 'Bank Transfer',
+        paymentAmount: 50000
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    console.log('✓ Successfully injected full dataset into active company!');
   }
 
   console.log('\n======================================================');
