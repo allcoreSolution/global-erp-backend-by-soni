@@ -20,7 +20,7 @@ const historySchema = new mongoose.Schema({
 }, { _id: false });
 
 const customerSchema = new mongoose.Schema({
-  customerCode: { type: String, required: true, unique: true, trim: true },
+  customerCode: { type: String, required: true, trim: true },
   name: { type: String, required: true, trim: true },
   ownerName: { type: String, default: '' },
   businessName: { type: String, default: '' },
@@ -65,6 +65,8 @@ const customerSchema = new mongoose.Schema({
   
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
 }, { timestamps: true });
+
+customerSchema.index({ customerCode: 1, company: 1 }, { unique: true });
 
 const Customer = mongoose.model('Customer', customerSchema);
 

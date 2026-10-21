@@ -10,7 +10,7 @@ const addressSchema = new mongoose.Schema({
 }, { _id: false });
 
 const supplierSchema = new mongoose.Schema({
-  supplierCode: { type: String, required: true, unique: true, trim: true },
+  supplierCode: { type: String, required: true, trim: true },
   type: { type: String, default: 'Manufacturer' },
   companyName: { type: String, required: true, trim: true },
   contactPerson: { type: String, default: '' },
@@ -52,6 +52,8 @@ const supplierSchema = new mongoose.Schema({
   
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
 }, { timestamps: true });
+
+supplierSchema.index({ supplierCode: 1, company: 1 }, { unique: true });
 
 const Supplier = mongoose.model('Supplier', supplierSchema);
 
