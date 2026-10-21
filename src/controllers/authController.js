@@ -89,9 +89,9 @@ const loginUser = async (req, res, next) => {
       }
 
       const ALL_MODULES = ['Dashboard', 'Sales', 'Purchase', 'Inventory', 'Customers', 'Accounts', 'HRMS', 'Attendance', 'Leave', 'Payroll', 'Reports', 'Settings'];
-      const allowedModules = user.role?.name === 'SuperAdmin'
+      const allowedModules = (user.role?.name === 'SuperAdmin' || user.role?.name === 'Admin' || !user.company?.subscriptionPlan)
         ? ALL_MODULES
-        : (user.company?.subscriptionPlan?.allowedModules || []);
+        : (user.company?.subscriptionPlan?.allowedModules || ALL_MODULES);
 
       res.json({
         _id: user._id,

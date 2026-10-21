@@ -29,6 +29,7 @@ const protect = async (req, res, next) => {
 
       // Set context for tenant isolation
       if (req.user.company) {
+        req.user.companyId = req.user.company;
         setContext('companyId', req.user.company);
       }
       if (req.user.role) {
