@@ -14,12 +14,14 @@ const orderItemSchema = new mongoose.Schema({
   mfgDate: { type: String, default: '' },
   expDate: { type: String, default: '' },
   freeQty: { type: Number, default: 0 },
+  assetAccount: { type: String, default: '' },
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
 });
 
 const purchaseSchema = new mongoose.Schema({
   // Basic Details
   purchaseDate: { type: String, required: true },
+  purchaseType: { type: String, enum: ['Trading Goods', 'Fixed Asset', 'Expense'], default: 'Trading Goods' },
   referenceNo: { type: String, default: '' },
   purchaseNo: { type: String, unique: true, sparse: true },
 

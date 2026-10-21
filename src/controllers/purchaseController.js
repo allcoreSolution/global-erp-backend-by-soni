@@ -170,9 +170,13 @@ const addPurchase = async (req, res, next) => {
       throw new Error('Koi bhi item nahi diya purchase mein!');
     }
 
+    const isAssetOrExpense = req.body.purchaseType === 'Fixed Asset' || req.body.purchaseType === 'Expense';
     const processedItems = [];
     for (const item of orderItems) {
-      const productId = await processStockForItem(item, warehouse, companyId, false);
+      let productId = item.product || null;
+      if (!isAssetOrExpense) {
+        productId = await processStockForItem(item, warehouse, companyId, false);
+      }
       processedItems.push({
         ...item,
         product: productId || item.product
@@ -313,15 +317,22 @@ const updatePurchase = async (req, res, next) => {
       throw new Error('Koi bhi item nahi diya edit purchase mein!');
     }
 
-    // 1. REVERSE old stock (subtract from warehouse)
-    for (const item of oldPurchase.orderItems) {
-      await processStockForItem(item, oldPurchase.warehouse, oldPurchase.company, true);
+    // 1. REVERSE old stock (subtract from warehouse) if it was trading goods
+    const oldWasAssetOrExpense = oldPurchase.purchaseType === 'Fixed Asset' || oldPurchase.purchaseType === 'Expense';
+    if (!oldWasAssetOrExpense) {
+      for (const item of oldPurchase.orderItems) {
+        await processStockForItem(item, oldPurchase.warehouse, oldPurchase.company, true);
+      }
     }
 
-    // 2. APPLY new stock (add to warehouse)
+    // 2. APPLY new stock (add to warehouse) if new type is trading goods
+    const newIsAssetOrExpense = (req.body.purchaseType || oldPurchase.purchaseType) === 'Fixed Asset' || (req.body.purchaseType || oldPurchase.purchaseType) === 'Expense';
     const processedItems = [];
     for (const item of orderItems) {
-      const productId = await processStockForItem(item, warehouse, companyId, false);
+      let productId = item.product || null;
+      if (!newIsAssetOrExpense) {
+        productId = await processStockForItem(item, warehouse, companyId, false);
+      }
       processedItems.push({
         ...item,
         product: productId || item.product
@@ -356,9 +367,12 @@ const deletePurchase = async (req, res, next) => {
       throw new Error('Purchase nahi mili!');
     }
 
-    // ✅ Pehle stock REVERSE karo
-    for (const item of purchase.orderItems) {
-      await processStockForItem(item, purchase.warehouse, purchase.company, true);
+    // ✅ Pehle stock REVERSE karo agar trading goods tha
+    const isAssetOrExpense = purchase.purchaseType === 'Fixed Asset' || purchase.purchaseType === 'Expense';
+    if (!isAssetOrExpense) {
+      for (const item of purchase.orderItems) {
+        await processStockForItem(item, purchase.warehouse, purchase.company, true);
+      }
     }
 
     // ✅ MUNIM JI KI ENTRY: Supplier ka udhaar (balance) wapas ghatao

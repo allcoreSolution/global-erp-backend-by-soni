@@ -14,6 +14,7 @@ const supplierSchema = new mongoose.Schema({
   type: { type: String, default: 'Manufacturer' },
   companyName: { type: String, required: true, trim: true },
   contactPerson: { type: String, default: '' },
+  contactPersonDesignation: { type: String, default: '' },
   phone: { type: String, default: '' },
   email: { type: String, default: '' },
   category: { type: String, default: 'Raw Materials' },

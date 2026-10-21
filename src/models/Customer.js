@@ -23,6 +23,8 @@ const customerSchema = new mongoose.Schema({
   customerCode: { type: String, required: true, trim: true },
   name: { type: String, required: true, trim: true },
   ownerName: { type: String, default: '' },
+  contactPerson: { type: String, default: '' },
+  contactPersonDesignation: { type: String, default: '' },
   businessName: { type: String, default: '' },
   type: { type: String, default: 'Retailer' },
   category: { type: String, default: 'Regular' },

@@ -25,6 +25,7 @@ const companySchema = new mongoose.Schema({
   drugLicenceValidity: { type: String, trim: true, default: '' },
   valuationMethod: { type: String, enum: ['FIFO', 'Average', 'LIFO'], default: 'FIFO' },
   dispatchMethod: { type: String, enum: ['FEFO', 'FIFO', 'LIFO'], default: 'FEFO' },
+  negativeStockAllowed: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   subscriptionPlan: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan' },
   subscriptionStatus: { type: String, enum: ['Active', 'Expired', 'Suspended'], default: 'Active' },

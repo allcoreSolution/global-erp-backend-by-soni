@@ -138,7 +138,17 @@ const productSchema = new mongoose.Schema({
     remainingQty: { type: Number, default: 0 },
     remainingValue: { type: Number, default: 0 }
   }],
-  
+  valuation: { type: String, enum: ['FIFO', 'Average', 'LIFO'], default: 'FIFO' },
+  dispatchRule: { type: String, enum: ['FEFO', 'FIFO', 'LIFO'], default: 'FIFO' },
+  costLayers: [{
+    layer: { type: String, default: '' },
+    costPerUnit: { type: Number, default: 0 },
+    purchasedQty: { type: Number, default: 0 },
+    soldQty: { type: Number, default: 0 },
+    returnedQty: { type: Number, default: 0 },
+    remainingQty: { type: Number, default: 0 },
+    remainingValue: { type: Number, default: 0 }
+  }],
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
 }, { timestamps: true });
 

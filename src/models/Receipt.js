@@ -29,6 +29,9 @@ const receiptSchema = new mongoose.Schema({
   // Payment Details
   paymentAmount: { type: Number, required: true, default: 0 },
   paymentMethod: { type: String, default: 'UPI' },
+  isSplitPayment: { type: Boolean, default: false },
+  bankAmount: { type: Number, default: 0 },
+  cashAmount: { type: Number, default: 0 },
   account: { type: String, default: '' },
   transactionRef: { type: String, default: '' },
   paymentDate: { type: String, default: '' },

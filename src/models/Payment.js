@@ -28,6 +28,11 @@ const paymentSchema = new mongoose.Schema({
   // Payment Details
   paymentAmount: { type: Number, required: true, default: 0 },
   paymentMethod: { type: String, default: 'Bank' },
+  isSplitPayment: { type: Boolean, default: false },
+  bankAmount: { type: Number, default: 0 },
+  cashAmount: { type: Number, default: 0 },
+  principalAmount: { type: Number, default: 0 },
+  interestAmount: { type: Number, default: 0 },
   paidFromAccount: { type: String, default: '' },
   transactionRef: { type: String, default: '' },
   bankName: { type: String, default: '' },

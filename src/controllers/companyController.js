@@ -270,7 +270,8 @@ const updateCompanyProfile = async (req, res, next) => {
     const { 
       name, code, email, phone, website, address, gstNumber, pan, cin, tan, logoUrl, themeColor,
       financialYear, currency, dateFormat, invoicePrefix, terms, signature,
-      ownerName, constitution, drugLicenceNo, drugLicenceValidity, valuationMethod, dispatchMethod
+      ownerName, constitution, drugLicenceNo, drugLicenceValidity, valuationMethod, dispatchMethod,
+      negativeStockAllowed
     } = req.body;
     
     let company = null;
@@ -310,6 +311,7 @@ const updateCompanyProfile = async (req, res, next) => {
     if (drugLicenceValidity !== undefined) company.drugLicenceValidity = drugLicenceValidity;
     if (valuationMethod !== undefined) company.valuationMethod = valuationMethod;
     if (dispatchMethod !== undefined) company.dispatchMethod = dispatchMethod;
+    if (negativeStockAllowed !== undefined) company.negativeStockAllowed = Boolean(negativeStockAllowed);
 
     const updatedCompany = await company.save();
 

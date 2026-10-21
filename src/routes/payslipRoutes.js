@@ -4,6 +4,7 @@ const {
   generatePayslipPreview,
   generateMonthlyBulkPayroll,
   updatePayslipStatus,
+  updatePayslip,
   completeAllPayslips,
   createPayslip,
   getPayslips,
@@ -16,6 +17,7 @@ router.get('/preview', protect, checkPermission('view_payslips'), generatePaysli
 router.post('/bulk-generate', protect, checkPermission(['create_payslips', 'manage_hrms', 'admin']), generateMonthlyBulkPayroll);
 router.put('/complete-all', protect, checkPermission(['edit_payslips', 'manage_hrms', 'admin']), completeAllPayslips);
 router.put('/:id/status', protect, checkPermission(['edit_payslips', 'manage_hrms', 'admin']), updatePayslipStatus);
+router.put('/:id', protect, checkPermission(['edit_payslips', 'manage_hrms', 'admin']), updatePayslip);
 router.post('/', protect, checkPermission('create_payslips'), createPayslip);
 router.get('/', protect, checkPermission('view_payslips'), getPayslips);
 router.get('/:id', protect, checkPermission('view_payslips'), getPayslipById);

@@ -361,10 +361,42 @@ const completeAllPayslips = async (req, res, next) => {
   }
 };
 
+const updatePayslip = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updateData = { ...req.body };
+    
+    if (updateData.basicSalary !== undefined || updateData.hra !== undefined || updateData.da !== undefined || updateData.otherAllowances !== undefined) {
+      updateData.grossEarnings = (Number(updateData.basicSalary) || 0) + (Number(updateData.hra) || 0) + (Number(updateData.da) || 0) + (Number(updateData.otherAllowances) || 0);
+    }
+    if (updateData.pfDeduction !== undefined || updateData.esiDeduction !== undefined || updateData.loanDeduction !== undefined || updateData.advanceDeduction !== undefined || updateData.otherDeduction !== undefined) {
+      updateData.totalDeductions = (Number(updateData.pfDeduction) || 0) + (Number(updateData.esiDeduction) || 0) + (Number(updateData.loanDeduction) || 0) + (Number(updateData.advanceDeduction) || 0) + (Number(updateData.otherDeduction) || 0);
+    }
+    if (updateData.grossEarnings !== undefined && updateData.totalDeductions !== undefined) {
+      updateData.netPay = updateData.grossEarnings - updateData.totalDeductions;
+    }
+
+    const payslip = await Payslip.findByIdAndUpdate(id, updateData, { new: true })
+      .populate('employee', 'username employeeName employeeId email department designation');
+    if (!payslip) return res.status(404).json({ success: false, message: 'Payslip not found' });
+    res.json({ success: true, message: 'Payslip updated successfully', data: payslip });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const createPayslip = async (req, res, next) => {
   try {
     const companyId = req.user?.company || req.user?.companyId;
-    const payslip = await Payslip.create({ ...req.body, ...(companyId ? { company: companyId } : {}) });
+    const payload = { ...req.body, ...(companyId ? { company: companyId } : {}) };
+    
+    const gross = (Number(payload.basicSalary) || 0) + (Number(payload.hra) || 0) + (Number(payload.da) || 0) + (Number(payload.otherAllowances) || 0);
+    const deductions = (Number(payload.pfDeduction) || 0) + (Number(payload.esiDeduction) || 0) + (Number(payload.loanDeduction) || 0) + (Number(payload.advanceDeduction) || 0) + (Number(payload.otherDeduction) || 0);
+    payload.grossEarnings = payload.grossEarnings !== undefined ? payload.grossEarnings : gross;
+    payload.totalDeductions = payload.totalDeductions !== undefined ? payload.totalDeductions : deductions;
+    payload.netPay = payload.netPay !== undefined ? payload.netPay : (payload.grossEarnings - payload.totalDeductions);
+
+    const payslip = await Payslip.create(payload);
     res.status(201).json({ success: true, data: payslip });
   } catch (error) {
     next(error);
@@ -421,6 +453,7 @@ module.exports = {
   generatePayslipPreview,
   generateMonthlyBulkPayroll,
   updatePayslipStatus,
+  updatePayslip,
   completeAllPayslips,
   createPayslip,
   getPayslips,
