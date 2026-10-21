@@ -10,6 +10,10 @@ const orderItemSchema = new mongoose.Schema({
   productPrice: { type: Number, default: 0 },
   discount: { type: Number, default: 0 },
   taxPercent: { type: Number, default: 0 },
+  batch: { type: String, default: '' },
+  mfgDate: { type: String, default: '' },
+  expDate: { type: String, default: '' },
+  freeQty: { type: Number, default: 0 },
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
 });
 

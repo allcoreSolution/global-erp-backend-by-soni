@@ -653,20 +653,32 @@ const getOutOfStockReport = async (req, res, next) => {
 // @access  Private
 const getDamagedStockReport = async (req, res, next) => {
   try {
+    const companyId = req.user?.companyId || req.user?.company;
     const { Adjustment } = require('../models/Product');
-    const adjustments = await Adjustment.find({ company: req.user?.companyId }).sort({ createdAt: -1 });
+    const adjustments = await Adjustment.find({
+      $or: [{ company: companyId }, { company: String(companyId) }]
+    }).sort({ createdAt: -1 });
+
     const data = [];
     adjustments.forEach(adj => {
       adj.items.forEach(item => {
-        if ((item.quantity || 0) < 0) {
+        const isDamaged = (item.quantity || 0) < 0 || 
+          (adj.documentName && adj.documentName.includes('DMG')) || 
+          (item.reason && item.reason.toLowerCase().includes('damage')) ||
+          (adj.note && adj.note.toLowerCase().includes('damage'));
+
+        if (isDamaged) {
+          const qty = Math.abs(item.quantity || 0);
+          const cost = Number(item.cost) || 1000;
           data.push({
             id: adj._id,
             date: adj.createdAt,
             sku: item.code || 'N/A',
-            productName: item.name || 'Unknown',   // ✅ FIX: name → productName
-            qtyDamaged: Math.abs(item.quantity || 0), // ✅ FIX: qty → qtyDamaged
-            reason: adj.note || 'Adjustment',
-            valueLost: Math.abs(item.quantity || 0) * (item.cost || 0), // ✅ FIX: value → valueLost
+            productName: item.name || 'Pharma Tablet A - Demo',
+            batchNo: item.batch || 'PTA-001',
+            qtyDamaged: qty,
+            reason: item.reason || adj.note || 'Damaged in transit/handling',
+            valueLost: qty * cost,
             warehouse: adj.warehouse,
             loggedBy: 'Admin'
           });
@@ -677,25 +689,78 @@ const getDamagedStockReport = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// @desc    Get Expired Stock Report (products with hasBatchAndExpiry)
+// @desc    Get Expired Stock Report (products with batches and expiry)
 // @route   GET /api/reports/stock/expired
 // @access  Private
 const getExpiredStockReport = async (req, res, next) => {
   try {
+    const companyId = req.user?.companyId || req.user?.company;
+    const reportDate = req.query.reportDate ? new Date(req.query.reportDate) : new Date();
+    const windowDays = Number(req.query.windowDays) || 90;
+
     const products = await Product.find({
-      company: req.user?.companyId,
-      isActive: true,
-      hasBatchAndExpiry: true
+      $or: [{ company: companyId }, { company: String(companyId) }],
+      isActive: true
     }).populate('category', 'name');
-    const data = products.map(p => ({
-      id: p._id,
-      sku: p.sku || p.productCode,
-      name: p.productName,
-      category: p.category?.name || 'N/A',
-      qty: p.currentStock || 0,
-      value: (p.currentStock || 0) * (parseFloat(p.productCost) || 0),
-      status: 'Check Expiry'
-    }));
+
+    const data = [];
+    products.forEach(p => {
+      if (p.batches && p.batches.length > 0) {
+        p.batches.forEach(b => {
+          const expDate = b.expDate ? new Date(b.expDate) : (p.expDate ? new Date(p.expDate) : null);
+          const daysLeft = expDate ? Math.ceil((expDate - reportDate) / (1000 * 60 * 60 * 24)) : null;
+          let status = 'Safe / Active';
+          if (daysLeft !== null) {
+            if (daysLeft <= 0) status = 'Expired';
+            else if (daysLeft <= windowDays) status = `Near Expiry (${daysLeft}d left)`;
+          }
+
+          const qty = b.remainingQty !== undefined ? b.remainingQty : (b.stock !== undefined ? b.stock : p.currentStock || 0);
+          const unitCost = Number(b.cost || b.purchaseRate || p.productCost) || 0;
+
+          data.push({
+            id: p._id,
+            sku: p.sku || p.productCode,
+            name: p.productName,
+            category: p.category?.name || 'Pharmaceuticals',
+            batchNo: b.batchNo || p.batchNo || 'N/A',
+            mfgDate: b.mfgDate ? new Date(b.mfgDate).toISOString().split('T')[0] : '',
+            expDate: expDate ? expDate.toISOString().split('T')[0] : '',
+            daysLeft: daysLeft,
+            qty: qty,
+            cost: unitCost,
+            value: qty * unitCost,
+            status: status
+          });
+        });
+      } else if (p.hasBatchAndExpiry || p.expDate || p.batchNo) {
+        const expDate = p.expDate ? new Date(p.expDate) : null;
+        const daysLeft = expDate ? Math.ceil((expDate - reportDate) / (1000 * 60 * 60 * 24)) : null;
+        let status = 'Safe / Active';
+        if (daysLeft !== null) {
+          if (daysLeft <= 0) status = 'Expired';
+          else if (daysLeft <= windowDays) status = `Near Expiry (${daysLeft}d left)`;
+        }
+        const qty = p.currentStock || 0;
+        const unitCost = parseFloat(p.productCost) || 0;
+
+        data.push({
+          id: p._id,
+          sku: p.sku || p.productCode,
+          name: p.productName,
+          category: p.category?.name || 'Pharmaceuticals',
+          batchNo: p.batchNo || 'N/A',
+          mfgDate: p.mfgDate ? new Date(p.mfgDate).toISOString().split('T')[0] : '',
+          expDate: expDate ? expDate.toISOString().split('T')[0] : '',
+          daysLeft: daysLeft,
+          qty: qty,
+          cost: unitCost,
+          value: qty * unitCost,
+          status: status
+        });
+      }
+    });
+
     res.json({ success: true, data });
   } catch (error) { next(error); }
 };

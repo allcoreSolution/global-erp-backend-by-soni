@@ -6,8 +6,8 @@ const { Product, Brand, Category } = require('../models/Product');
 // HELPER: Product dhundho ya auto-banao, stock update karo (No Transactions - Localhost Safe)
 // ─────────────────────────────────────────────────────
 const processStockForItem = async (item, warehouseId, companyId, isReverse = false) => {
-  const qty = Number(item.quantity) || 0;
-  const stockChange = isReverse ? -qty : qty;
+  const qty = (Number(item.quantity) || 0) + (isReverse ? 0 : (Number(item.freeQty) || 0));
+  const stockChange = isReverse ? -(Number(item.quantity) || 0) : qty;
 
   let dbProduct = null;
 
@@ -93,6 +93,44 @@ const processStockForItem = async (item, warehouseId, companyId, isReverse = fal
 
   // Update DB directly to prevent race condition lost updates
   await Product.updateOne({ _id: dbProduct._id }, updateData);
+
+  // Update batch details if provided
+  if (!isReverse && item.batch) {
+    const existingBatch = dbProduct.batches?.find(b => b.batchNo === item.batch);
+    if (existingBatch) {
+      await Product.updateOne(
+        { _id: dbProduct._id, "batches.batchNo": item.batch },
+        { 
+          $inc: { "batches.$.stock": stockChange },
+          $set: {
+            batchNo: item.batch,
+            ...(item.mfgDate && { mfgDate: item.mfgDate }),
+            ...(item.expDate && { expDate: item.expDate })
+          }
+        }
+      );
+    } else {
+      await Product.updateOne(
+        { _id: dbProduct._id },
+        { 
+          $push: { 
+            batches: { 
+              batchNo: item.batch, 
+              mfgDate: item.mfgDate || null, 
+              expDate: item.expDate || null, 
+              stock: qty, 
+              purchaseRate: Number(item.netUnitCost) || 0 
+            } 
+          },
+          $set: {
+            batchNo: item.batch,
+            ...(item.mfgDate && { mfgDate: item.mfgDate }),
+            ...(item.expDate && { expDate: item.expDate })
+          }
+        }
+      );
+    }
+  }
 
   // Update warehouse stock array safely using findOneAndUpdate and array filters
   if (warehouseId) {

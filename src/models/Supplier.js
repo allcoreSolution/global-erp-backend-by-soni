@@ -31,8 +31,11 @@ const supplierSchema = new mongoose.Schema({
   banks: { type: Array, default: [] },
   
   paymentTerms: { type: String, default: 'Net 30' },
+  creditPeriod: { type: Number, default: 30 },
   creditLimit: { type: Number, default: 0 },
   currency: { type: String, default: 'INR' },
+  drugLicenceNo: { type: String, default: '' },
+  drugLicenceValidity: { type: String, default: '' },
   purchasePriceList: { type: String, default: '' },
   discount: { type: Number, default: 0 },
   additionalDiscount: { type: Number, default: 0 },

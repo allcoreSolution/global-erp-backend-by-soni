@@ -269,7 +269,8 @@ const updateCompanyProfile = async (req, res, next) => {
   try {
     const { 
       name, code, email, phone, website, address, gstNumber, pan, cin, tan, logoUrl, themeColor,
-      financialYear, currency, dateFormat, invoicePrefix, terms, signature
+      financialYear, currency, dateFormat, invoicePrefix, terms, signature,
+      ownerName, constitution, drugLicenceNo, drugLicenceValidity, valuationMethod, dispatchMethod
     } = req.body;
     
     let company = null;
@@ -302,6 +303,13 @@ const updateCompanyProfile = async (req, res, next) => {
     if (invoicePrefix !== undefined) company.invoicePrefix = invoicePrefix;
     if (terms !== undefined) company.terms = terms;
     if (signature !== undefined) company.signature = signature;
+
+    if (ownerName !== undefined) company.ownerName = ownerName;
+    if (constitution !== undefined) company.constitution = constitution;
+    if (drugLicenceNo !== undefined) company.drugLicenceNo = drugLicenceNo;
+    if (drugLicenceValidity !== undefined) company.drugLicenceValidity = drugLicenceValidity;
+    if (valuationMethod !== undefined) company.valuationMethod = valuationMethod;
+    if (dispatchMethod !== undefined) company.dispatchMethod = dispatchMethod;
 
     const updatedCompany = await company.save();
 

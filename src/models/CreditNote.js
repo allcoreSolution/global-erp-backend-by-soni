@@ -6,7 +6,11 @@ const creditNoteItemSchema = new mongoose.Schema({
   qty: { type: Number, required: true, default: 0 },
   rate: { type: Number, required: true, default: 0 },
   taxPercent: { type: Number, default: 0 },
-  amount: { type: Number, required: true, default: 0 }
+  amount: { type: Number, required: true, default: 0 },
+  quarantineStatus: { type: String, enum: ['Quarantined', 'Passed', 'Rejected', 'Released'], default: 'Quarantined' },
+  inspectionDate: { type: Date },
+  inspectorName: { type: String, default: '' },
+  inspectionRemarks: { type: String, default: '' }
 });
 
 const creditNoteSchema = new mongoose.Schema({
@@ -14,10 +18,14 @@ const creditNoteSchema = new mongoose.Schema({
   creditNoteNo: { type: String, required: true, unique: true },
   voucherNo: { type: String }, // To bypass legacy duplicate index E11000
   date: { type: String, required: true },
-  company: { type: String, default: '' },
+  company: { type: mongoose.Schema.Types.Mixed, default: '' },
   branch: { type: String, default: '' },
   type: { type: String, default: 'Sales Return' },
   status: { type: String, default: 'Draft' },
+  quarantineStatus: { type: String, enum: ['Quarantined', 'Passed', 'Rejected', 'Released'], default: 'Quarantined' },
+  inspectionDate: { type: Date },
+  inspectorName: { type: String, default: '' },
+  inspectionRemarks: { type: String, default: '' },
   
   // Customer Details
   customer: { type: String, default: '' },

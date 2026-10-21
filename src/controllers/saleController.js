@@ -44,10 +44,20 @@ const createSale = async (req, res, next) => {
       }
 
       // Check warehouse specific stock
-      const targetWarehouseName = req.body.warehouse;
-      const whStock = dbProduct.warehouseStocks?.find(w => w.warehouse === targetWarehouseName) || { stock: 0 };
+      const targetWarehouseInput = String(req.body.warehouse || '');
+      let whStock = dbProduct.warehouseStocks?.find(w => String(w.warehouse) === targetWarehouseInput);
+      if (!whStock) {
+        try {
+          const { Warehouse } = require('../models/Warehouse');
+          const whDoc = await Warehouse.findById(targetWarehouseInput).catch(() => null);
+          if (whDoc) {
+            whStock = dbProduct.warehouseStocks?.find(w => w.warehouse === whDoc.name);
+          }
+        } catch (_) {}
+      }
+      whStock = whStock || { stock: 0 };
 
-      if (whStock.stock < item.quantity) {
+      if (!dbProduct.negativeStockAllowed && whStock.stock < item.quantity) {
         res.status(400);
         return next(new Error(`Insufficient stock for product ${dbProduct.productName} in the selected warehouse. Available: ${whStock.stock}`));
       }
@@ -72,20 +82,30 @@ const createSale = async (req, res, next) => {
         netUnitPrice: itemPrice,
         discount: itemDiscount,
         taxPercent: itemTaxRate,
-        total: itemGrand
+        total: itemGrand,
+        batch: item.batch || '',
+        expDate: item.expDate || ''
       });
 
       // Deduct Stock
       dbProduct.currentStock -= item.quantity;
       if (dbProduct.warehouseStocks && dbProduct.warehouseStocks.length > 0) {
-        const whIndex = dbProduct.warehouseStocks.findIndex(w => w.warehouse === targetWarehouseName);
+        const whIndex = dbProduct.warehouseStocks.findIndex(w => String(w.warehouse) === targetWarehouseInput || (whStock.warehouse && w.warehouse === whStock.warehouse));
         if (whIndex >= 0) {
           dbProduct.warehouseStocks[whIndex].stock -= item.quantity;
         } else {
-          dbProduct.warehouseStocks.push({ warehouse: targetWarehouseName, stock: -item.quantity });
+          dbProduct.warehouseStocks.push({ warehouse: targetWarehouseInput, stock: -item.quantity });
         }
       } else {
-        dbProduct.warehouseStocks = [{ warehouse: targetWarehouseName, stock: -item.quantity }];
+        dbProduct.warehouseStocks = [{ warehouse: targetWarehouseInput, stock: -item.quantity }];
+      }
+
+      // Deduct Batch Stock if batch tracking is active
+      if (item.batch && dbProduct.batches && dbProduct.batches.length > 0) {
+        const batchIndex = dbProduct.batches.findIndex(b => b.batchNo === item.batch);
+        if (batchIndex >= 0) {
+          dbProduct.batches[batchIndex].stock -= item.quantity;
+        }
       }
       
       await dbProduct.save();

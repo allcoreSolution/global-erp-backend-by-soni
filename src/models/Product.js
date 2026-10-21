@@ -37,11 +37,14 @@ const unitSchema = new mongoose.Schema({
 const adjustmentSchema = new mongoose.Schema({
   warehouse: { type: String, required: true },
   documentName: { type: String, default: null },
+  lossType: { type: String, default: 'Damage Loss' },
   items: [{
     name: { type: String },
     code: { type: String },
+    batch: { type: String, default: '' },
     cost: { type: Number },
-    quantity: { type: Number }
+    quantity: { type: Number },
+    reason: { type: String, default: '' }
   }],
   note: { type: String, default: '' },
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
@@ -116,6 +119,25 @@ const productSchema = new mongoose.Schema({
   hasBatchAndExpiry: { type: Boolean, default: false },
   hasImeiOrSerial: { type: Boolean, default: false },
   hasPromoPrice: { type: Boolean, default: false },
+  
+  // Pharma & Batch Management
+  mrp: { type: Number, default: 0 },
+  packingDetails: { type: String, default: '' },
+  negativeStockAllowed: { type: Boolean, default: false },
+  batchNo: { type: String, default: '' },
+  mfgDate: { type: String, default: '' },
+  expDate: { type: String, default: '' },
+  batches: [{
+    batchNo: { type: String, default: '' },
+    mfgDate: { type: String, default: '' },
+    expDate: { type: String, default: '' },
+    cost: { type: Number, default: 0 },
+    purchaseQty: { type: Number, default: 0 },
+    soldQty: { type: Number, default: 0 },
+    returnedQty: { type: Number, default: 0 },
+    remainingQty: { type: Number, default: 0 },
+    remainingValue: { type: Number, default: 0 }
+  }],
   
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
 }, { timestamps: true });

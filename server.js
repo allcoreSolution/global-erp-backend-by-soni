@@ -320,6 +320,10 @@ app.use('/api/reports/purchases', purchaseReportRoutes);
 const stockReportRoutes = require('./src/routes/stockReportRoutes');
 app.use('/api/reports/stock', stockReportRoutes);
 
+// Advanced Pharma Compliance & Operations Routes
+const pharmaRoutes = require('./src/routes/pharmaRoutes');
+app.use('/api/pharma', pharmaRoutes);
+
 // Price List Routes
 const priceListRoutes = require('./src/routes/priceListRoutes');
 app.use('/api/price-lists', priceListRoutes);

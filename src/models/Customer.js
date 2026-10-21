@@ -30,6 +30,9 @@ const customerSchema = new mongoose.Schema({
   phone: { type: String, default: '' },
   email: { type: String, default: '' },
   pan: { type: String, default: '' },
+  gstin: { type: String, default: '' },
+  drugLicenceNo: { type: String, default: '' },
+  drugLicenceValidity: { type: String, default: '' },
   
   billingAddress: { type: addressSchema, default: () => ({}) },
   shippingAddress: { type: addressSchema, default: () => ({}) },
