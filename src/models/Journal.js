@@ -12,6 +12,7 @@ const journalSchema = new mongoose.Schema({
   // Basic Information
   journalNo: { type: String, required: true, unique: true },
   journalDate: { type: String, required: true },
+  company: { type: mongoose.Schema.Types.Mixed, default: '' },
   financialYear: { type: String, default: '2023-24' },
   referenceNo: { type: String, default: '' },
   

@@ -13,7 +13,7 @@ const paymentSchema = new mongoose.Schema({
   paymentNo: { type: String, required: true, unique: true },
   paymentDate: { type: String, required: true },
   paymentType: { type: String, default: 'Supplier' },
-  company: { type: String, default: '' },
+  company: { type: mongoose.Schema.Types.Mixed, default: '' },
   branch: { type: String, default: '' },
   warehouse: { type: String, default: '' },
   status: { type: String, default: 'Draft' },
