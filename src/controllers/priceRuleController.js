@@ -1,10 +1,38 @@
+const mongoose = require('mongoose');
 const { PriceRule } = require('../models/PriceRule');
+
+const getQueryById = (idParam) => {
+  if (mongoose.Types.ObjectId.isValid(idParam)) {
+    return { $or: [{ _id: idParam }, { id: idParam }] };
+  }
+  return { id: idParam };
+};
 
 const createPriceRule = async (req, res, next) => {
   try {
     let id = req.body.id;
-    if (!id) {
-      id = `PR-${Date.now().toString().slice(-5)}`;
+
+    // Check if id is missing or already exists in database
+    const idExists = id ? await PriceRule.exists({ id }) : false;
+    if (!id || idExists) {
+      // Find highest existing PR- number across all rules in database
+      const allRules = await PriceRule.find({}, 'id ruleCode').lean();
+      let maxNum = 0;
+      for (const r of allRules) {
+        const val = r.id || r.ruleCode || '';
+        const match = String(val).match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        }
+      }
+      id = `PR-${String(maxNum + 1).padStart(5, '0')}`;
+      while (await PriceRule.exists({ id })) {
+        maxNum++;
+        id = `PR-${String(maxNum).padStart(5, '0')}`;
+      }
     }
     
     const priceRule = await PriceRule.create({
@@ -30,7 +58,7 @@ const getPriceRules = async (req, res, next) => {
 
 const getPriceRuleById = async (req, res, next) => {
   try {
-    const priceRule = await PriceRule.findById(req.params.id);
+    const priceRule = await PriceRule.findOne(getQueryById(req.params.id));
     if (!priceRule) {
       res.status(404);
       return next(new Error('Price Rule not found'));
@@ -43,10 +71,11 @@ const getPriceRuleById = async (req, res, next) => {
 
 const updatePriceRule = async (req, res, next) => {
   try {
-    const priceRule = await PriceRule.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
+    const priceRule = await PriceRule.findOneAndUpdate(
+      getQueryById(req.params.id),
+      req.body,
+      { new: true, runValidators: true }
+    );
     if (!priceRule) {
       res.status(404);
       return next(new Error('Price Rule not found'));
@@ -59,9 +88,9 @@ const updatePriceRule = async (req, res, next) => {
 
 const patchPriceRule = async (req, res, next) => {
   try {
-    const priceRule = await PriceRule.findByIdAndUpdate(
-      req.params.id, 
-      { $set: req.body }, 
+    const priceRule = await PriceRule.findOneAndUpdate(
+      getQueryById(req.params.id),
+      { $set: req.body },
       { new: true, runValidators: true }
     );
     if (!priceRule) {
@@ -76,7 +105,7 @@ const patchPriceRule = async (req, res, next) => {
 
 const deletePriceRule = async (req, res, next) => {
   try {
-    const priceRule = await PriceRule.findByIdAndDelete(req.params.id);
+    const priceRule = await PriceRule.findOneAndDelete(getQueryById(req.params.id));
     if (!priceRule) {
       res.status(404);
       return next(new Error('Price Rule not found'));
