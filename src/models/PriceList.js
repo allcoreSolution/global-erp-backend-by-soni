@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const priceListSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true, trim: true },
+  id: { type: String, required: true, trim: true },
+  priceListCode: { type: String, trim: true },
   name: { type: String, required: true, trim: true },
   priceType: { type: String, default: 'Sales' },
   applicableFor: { type: String, default: 'Retailer' },
