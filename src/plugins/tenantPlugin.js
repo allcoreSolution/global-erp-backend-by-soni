@@ -59,10 +59,25 @@ const tenantPlugin = (schema, options) => {
     }
 
     // Auto-assign companyId if not present
-    if (companyId && !this.company) {
-      this.company = companyId;
-    } else if (companyId && this.company && this.company.toString() !== companyId.toString()) {
-      throw new Error('Cross-tenant data violation!');
+    if (companyId) {
+      if (!this.company) {
+        this.company = companyId;
+      } else {
+        const currentComp = (typeof this.company === 'object' && this.company?._id)
+          ? this.company._id.toString()
+          : this.company.toString();
+
+        if (currentComp === companyId.toString()) {
+          this.company = companyId;
+        } else if (/^[0-9a-fA-F]{24}$/.test(currentComp)) {
+          // Document specifies a different valid company ObjectId
+          throw new Error('Cross-tenant data violation!');
+        } else {
+          // If this.company was assigned a non-ID string (e.g. company name "Apex Pharma Distributors" or display text)
+          // enforce proper tenant isolation by assigning the tenant companyId
+          this.company = companyId;
+        }
+      }
     }
   });
 };

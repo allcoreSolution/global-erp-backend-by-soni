@@ -19,16 +19,13 @@ const createEmployee = async (req, res, next) => {
 
     const rawCompany = req.user?.company || req.user?.companyId || req.body.company;
     let companyId = null;
-    let companyName = typeof req.body.company === 'string' ? req.body.company : '';
 
     if (rawCompany) {
       if (typeof rawCompany === 'object' && rawCompany._id) {
         companyId = rawCompany._id;
-        companyName = companyName || rawCompany.name || '';
       } else if (mongoose.Types.ObjectId.isValid(rawCompany)) {
         companyId = rawCompany;
       } else if (typeof rawCompany === 'string') {
-        companyName = companyName || rawCompany;
         const compDoc = await Company.findOne({ name: rawCompany });
         if (compDoc) {
           companyId = compDoc._id;
@@ -36,9 +33,11 @@ const createEmployee = async (req, res, next) => {
       }
     }
 
+    const finalCompanyId = companyId ? companyId.toString() : (req.user?.companyId ? req.user.companyId.toString() : (req.user?.company ? req.user.company.toString() : ''));
+
     const newEmployee = await Employee.create({
       ...employeeData,
-      company: companyName || (companyId ? companyId.toString() : '')
+      company: finalCompanyId
     });
 
     // Auto-create ERP Login User if createLogin is 'Yes'
@@ -256,6 +255,27 @@ const updateEmployee = async (req, res, next) => {
       updateData.profilePhoto = `/uploads/employees/${req.file.filename}`;
     } else if (req.file && req.file.path) {
       updateData.profilePhoto = `/uploads/employees/${path.basename(req.file.path)}`;
+    }
+
+    const rawCompany = req.user?.company || req.user?.companyId || updateData.company;
+    let companyId = null;
+    if (rawCompany) {
+      if (typeof rawCompany === 'object' && rawCompany._id) {
+        companyId = rawCompany._id;
+      } else if (mongoose.Types.ObjectId.isValid(rawCompany)) {
+        companyId = rawCompany;
+      } else if (typeof rawCompany === 'string') {
+        const compDoc = await Company.findOne({ name: rawCompany });
+        if (compDoc) {
+          companyId = compDoc._id;
+        }
+      }
+    }
+
+    if (companyId) {
+      updateData.company = companyId.toString();
+    } else if (updateData.company && !mongoose.Types.ObjectId.isValid(updateData.company)) {
+      delete updateData.company;
     }
 
     const employee = await Employee.findByIdAndUpdate(req.params.id, updateData, {
