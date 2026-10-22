@@ -1,8 +1,10 @@
+const mongoose = require('mongoose');
 const { CreditNote } = require('../models/CreditNote');
-
 const { Product } = require('../models/Product');
 const CustomerReq = require('../models/Customer');
 const Customer = CustomerReq.Customer || CustomerReq;
+const { Branch } = require('../models/Branch');
+const { Warehouse } = require('../models/Warehouse');
 
 // @desc    Create a new Credit Note
 // @route   POST /api/credit-notes
@@ -12,7 +14,6 @@ const createCreditNote = async (req, res, next) => {
     let customerId = req.body.customer;
 
     // Frontend might send Customer Name instead of ObjectId
-    const mongoose = require('mongoose');
     if (customerId && !mongoose.Types.ObjectId.isValid(customerId)) {
       const customerDoc = await Customer.findOne({ name: customerId });
       if (customerDoc) {
@@ -20,38 +21,86 @@ const createCreditNote = async (req, res, next) => {
       }
     }
 
+    const companyId = req.user?.companyId || req.user?.company || req.body.company || null;
+
+    // Auto-generate or deduplicate creditNoteNo
+    let creditNoteNo = req.body.creditNoteNo || `CN-${Math.floor(Math.random() * 90000) + 10000}`;
+    const existing = await CreditNote.findOne({ creditNoteNo });
+    if (existing) {
+      creditNoteNo = `CN-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 900) + 100}`;
+    }
+
     const payload = {
       ...req.body,
+      creditNoteNo,
+      voucherNo: req.body.voucherNo || creditNoteNo,
+      noteNo: req.body.noteNo || creditNoteNo,
       customer: customerId,
-      company: req.user?.companyId || req.body.company
+      company: companyId
     };
 
     const newCreditNote = await CreditNote.create(payload);
 
     // ERP LOGIC: If it's a Sales Return, return the stock to inventory
     if (req.body.type === 'Sales Return' && req.body.items && req.body.items.length > 0) {
-      const targetWarehouseName = req.body.branch; // Or warehouse if provided
+      const targetWarehouseInput = req.body.warehouse || req.body.branch;
+      let targetWarehouseNames = [];
+
+      if (targetWarehouseInput) {
+        targetWarehouseNames.push(String(targetWarehouseInput).trim());
+        const branchDoc = await Branch.findOne({
+          ...(companyId ? { company: companyId } : {}),
+          $or: [
+            { name: targetWarehouseInput },
+            ...(mongoose.isValidObjectId(targetWarehouseInput) ? [{ _id: targetWarehouseInput }] : [])
+          ]
+        }).catch(() => null);
+        if (branchDoc) {
+          targetWarehouseNames.push(branchDoc.name.trim());
+          const linkedWarehouses = await Warehouse.find({ branch: branchDoc._id }).catch(() => []);
+          linkedWarehouses.forEach(w => targetWarehouseNames.push(w.name.trim()));
+        }
+      }
 
       for (const item of req.body.items) {
-        // Find product by name or code
+        if (!item.product) continue;
         let prodQuery = { $or: [] };
         if (item.product) prodQuery.$or.push({ productName: item.product });
         if (item.code) prodQuery.$or.push({ productCode: item.code });
+        if (mongoose.isValidObjectId(item.product)) prodQuery.$or.push({ _id: item.product });
 
-        const dbProduct = await Product.findOne(prodQuery.$or.length ? prodQuery : { _id: null });
+        let dbProduct = null;
+        if (companyId) {
+          dbProduct = await Product.findOne({
+            company: companyId,
+            ...(prodQuery.$or.length ? prodQuery : { _id: null })
+          });
+        }
+        if (!dbProduct && prodQuery.$or.length) {
+          dbProduct = await Product.findOne(prodQuery);
+        }
         
         if (dbProduct) {
-          // Increase stock
-          dbProduct.currentStock = (Number(dbProduct.currentStock) || 0) + Number(item.qty);
+          const qty = Number(item.qty) || 0;
+          // Increase overall stock
+          dbProduct.currentStock = (Number(dbProduct.currentStock) || 0) + qty;
 
           // Update warehouse specific stock
-          if (targetWarehouseName) {
-            if (!dbProduct.warehouseStocks) dbProduct.warehouseStocks = [];
-            const whIndex = dbProduct.warehouseStocks.findIndex(w => w.warehouse === targetWarehouseName);
+          if (!Array.isArray(dbProduct.warehouseStocks)) {
+            dbProduct.warehouseStocks = [];
+          }
+
+          if (targetWarehouseNames.length > 0) {
+            const whIndex = dbProduct.warehouseStocks.findIndex(w => 
+              targetWarehouseNames.some(target => 
+                String(w.warehouse).trim().toLowerCase() === target.trim().toLowerCase()
+              )
+            );
             if (whIndex >= 0) {
-              dbProduct.warehouseStocks[whIndex].stock = (Number(dbProduct.warehouseStocks[whIndex].stock) || 0) + Number(item.qty);
+              dbProduct.warehouseStocks[whIndex].stock = (Number(dbProduct.warehouseStocks[whIndex].stock) || 0) + qty;
             } else {
-              dbProduct.warehouseStocks.push({ warehouse: targetWarehouseName, stock: Number(item.qty) });
+              const preferredWh = targetWarehouseNames[1] || targetWarehouseNames[0] || targetWarehouseInput;
+              dbProduct.warehouseStocks.push({ warehouse: preferredWh, stock: qty });
             }
           }
           await dbProduct.save();
@@ -64,7 +113,6 @@ const createCreditNote = async (req, res, next) => {
       const Voucher = require('../models/Voucher');
       const AccountLedger = require('../models/AccountLedger');
       
-      const companyId = req.user?.companyId || req.body.company || null;
       const totalAmount = newCreditNote.summary?.grandTotal || 0;
 
       if (totalAmount > 0) {
@@ -85,7 +133,7 @@ const createCreditNote = async (req, res, next) => {
         await Voucher.create({
           voucherNo: `V-${newCreditNote.creditNoteNo}`,
           date: newCreditNote.date || new Date().toISOString().split('T')[0],
-          voucherType: 'Journal', // Using Journal for adjustments
+          voucherType: 'Journal',
           company: companyId,
           status: 'Posted',
           generalNarration: `Auto-generated voucher for Credit Note ${newCreditNote.creditNoteNo}`,
@@ -111,6 +159,9 @@ const createCreditNote = async (req, res, next) => {
 
     res.status(201).json({ success: true, data: newCreditNote });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'Duplicate credit note number. Please try again.' });
+    }
     next(error);
   }
 };
@@ -120,8 +171,9 @@ const createCreditNote = async (req, res, next) => {
 // @access  Private
 const getCreditNotes = async (req, res, next) => {
   try {
-    const query = req.user?.companyId ? { company: req.user.companyId } : {};
-    const creditNotes = await CreditNote.find(query);
+    const companyId = req.user?.companyId || req.user?.company;
+    const query = companyId ? { company: companyId } : {};
+    const creditNotes = await CreditNote.find(query).sort({ createdAt: -1 });
     res.json({ success: true, data: creditNotes });
   } catch (error) {
     next(error);
@@ -149,7 +201,15 @@ const getCreditNoteById = async (req, res, next) => {
 // @access  Private
 const updateCreditNote = async (req, res, next) => {
   try {
-    const creditNote = await CreditNote.findByIdAndUpdate(req.params.id, req.body, {
+    const payload = { ...req.body };
+    if (!payload.noteNo && payload.creditNoteNo) {
+      payload.noteNo = payload.creditNoteNo;
+    }
+    if (!payload.voucherNo && payload.creditNoteNo) {
+      payload.voucherNo = payload.creditNoteNo;
+    }
+
+    const creditNote = await CreditNote.findByIdAndUpdate(req.params.id, payload, {
       new: true,
       runValidators: true
     });
@@ -190,18 +250,18 @@ const importCreditNotes = async (req, res, next) => {
       return next(new Error('Invalid or empty data'));
     }
 
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.company;
     const notesWithCompany = notes.map(n => ({
       ...n,
+      noteNo: n.noteNo || n.creditNoteNo,
+      voucherNo: n.voucherNo || n.creditNoteNo,
       company: companyId || n.company
     }));
 
-    // Use insertMany, but ignore duplicate key errors for ordered: false
     const imported = await CreditNote.insertMany(notesWithCompany, { ordered: false });
     res.status(201).json({ success: true, count: imported.length, data: imported });
   } catch (error) {
     if (error.code === 11000) {
-      // Partial success if some failed due to duplicate keys
       return res.status(207).json({ success: true, message: 'Imported with some duplicate errors', count: error.insertedDocs?.length || 0 });
     }
     next(error);

@@ -17,9 +17,11 @@ const creditNoteSchema = new mongoose.Schema({
   // Basic Information
   creditNoteNo: { type: String, required: true, unique: true },
   voucherNo: { type: String }, // To bypass legacy duplicate index E11000
+  noteNo: { type: String }, // To bypass legacy duplicate index noteNo_1
   date: { type: String, required: true },
   company: { type: mongoose.Schema.Types.Mixed, default: '' },
   branch: { type: String, default: '' },
+  warehouse: { type: String, default: '' },
   type: { type: String, default: 'Sales Return' },
   status: { type: String, default: 'Draft' },
   quarantineStatus: { type: String, enum: ['Quarantined', 'Passed', 'Rejected', 'Released'], default: 'Quarantined' },
