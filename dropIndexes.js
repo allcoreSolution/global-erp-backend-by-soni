@@ -22,6 +22,10 @@ mongoose.connect(process.env.MONGO_URI)
       console.log('Dropping stale index for Couriers...');
       await mongoose.connection.collection('couriers').dropIndex('courierCode_1').catch(e => console.log('Index courierCode_1 not found or already dropped'));
 
+      console.log('Dropping stale index for StockTransfers...');
+      await mongoose.connection.collection('stocktransfers').dropIndex('transferNo_1').catch(e => console.log('Index transferNo_1 not found or already dropped'));
+      await mongoose.connection.collection('stocktransfers').dropIndex('voucherNo_1').catch(e => console.log('Index voucherNo_1 not found or already dropped'));
+
       console.log('Indexes dropped successfully!');
     } catch(err) {
       console.error(err);
