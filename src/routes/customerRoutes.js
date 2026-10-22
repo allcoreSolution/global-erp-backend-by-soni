@@ -6,9 +6,14 @@ const {
   getCustomerById,
   updateCustomer,
   patchCustomer,
-  deleteCustomer
+  deleteCustomer,
+  getCustomersLedgerSummary,
+  getCustomerLedgerDetails
 } = require('../controllers/customerController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
+
+router.get('/ledger/summary', protect, checkPermission(['view_contacts', 'view_sales']), getCustomersLedgerSummary);
+router.get('/:id/ledger', protect, checkPermission(['view_contacts', 'view_sales']), getCustomerLedgerDetails);
 
 router.get('/', protect, checkPermission('view_contacts'), getCustomers);
 router.get('/:id', protect, checkPermission('view_contacts'), getCustomerById);

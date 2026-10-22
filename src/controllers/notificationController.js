@@ -1,6 +1,6 @@
 const Notification = require('../models/Notification');
 const { Product } = require('../models/Product');
-const Customer = require('../models/Customer');
+const { Customer } = require('../models/Customer');
 const LeaveRequest = require('../models/LeaveRequest');
 const ExpenseClaim = require('../models/ExpenseClaim');
 const Company = require('../models/Company');
