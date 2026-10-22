@@ -1,0 +1,2155 @@
+{
+  "meta": {
+    "createdAt": "2026-10-22T09:40:00.405Z",
+    "companyId": "6ad86e7477a82df88303aa7f",
+    "createdBy": "admin",
+    "type": "Tenant-Specific Backup",
+    "scope": "Selected Tenant"
+  },
+  "collections": {
+    "User": [
+      {
+        "_id": "6a97b28f00f14f080a3afd8c",
+        "username": "admin",
+        "email": "admin@gmail.com",
+        "password": "$2b$10$5VR5HdoXxbukCQ2uZ2mWK.4ZauQuNz1MoWZsGZ9qbeXzTADYrozBu",
+        "role": "6a82a5f31d301c651a1f8d60",
+        "isActive": true,
+        "createdAt": "2026-09-02T05:22:23.902Z",
+        "updatedAt": "2026-10-13T06:55:29.558Z",
+        "__v": 0,
+        "company": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6a9e757a657446130ca58186",
+        "username": "tiwarisoni671",
+        "email": "tiwarisoni671@gmail.com",
+        "password": "$2b$10$5VR5HdoXxbukCQ2uZ2mWK.4ZauQuNz1MoWZsGZ9qbeXzTADYrozBu",
+        "role": "6a82a5f31d301c651a1f8d60",
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-09-07T08:27:38.148Z",
+        "updatedAt": "2026-10-12T08:28:35.302Z",
+        "__v": 0,
+        "phone": "",
+        "profilePhoto": ""
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa80",
+        "name": "Amit Sharma",
+        "email": "apexpharma@gmail.com",
+        "password": "$2b$10$5VR5HdoXxbukCQ2uZ2mWK.4ZauQuNz1MoWZsGZ9qbeXzTADYrozBu",
+        "role": "6a82a5f31d301c651a1f8d60",
+        "company": "6ad86e7477a82df88303aa7f",
+        "isActive": true,
+        "updatedAt": "2026-10-21T07:50:11.526Z",
+        "createdAt": "2026-04-01T09:00:00.000Z"
+      }
+    ],
+    "Company": [
+      {
+        "_id": "6ad86e7477a82df88303aa7f",
+        "name": "Apex Pharma Distributors",
+        "code": "APD",
+        "email": "info@apexpharma.com",
+        "phone": "+91 9876543210",
+        "website": "https://apexpharma.com",
+        "address": "Indira Nagar, Lucknow, Uttar Pradesh",
+        "city": "Lucknow",
+        "state": "Uttar Pradesh",
+        "gstin": "09AABCA1234F1Z5",
+        "businessType": "Pharmaceutical wholesale and distribution",
+        "constitution": "Proprietorship",
+        "ownerName": "Amit Sharma",
+        "billingCycle": "yearly",
+        "financialYear": "2026-2027",
+        "currency": "INR (₹)",
+        "dateFormat": "YYYY-MM-DD",
+        "invoicePrefix": "APD-",
+        "terms": "Payment is due within credit period.",
+        "signature": "Amit Sharma - Proprietor",
+        "drugLicenceNo": "DL-20B-12345/21B-67890",
+        "drugLicenceValidity": "2029-03-31",
+        "valuationMethod": "FIFO",
+        "dispatchMethod": "FEFO",
+        "isActive": true,
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-04-01T09:00:00.000Z",
+        "subscriptionExpiry": "2030-01-01T00:00:00.000Z",
+        "subscriptionPlan": "6acf2906c0c15aa831a72545",
+        "subscriptionStatus": "Active"
+      }
+    ],
+    "Employee": [
+      {
+        "_id": "6ad86eb3582278adbbc86c5d",
+        "employeeId": "EMP-001",
+        "employeeName": "Rahul Verma",
+        "gender": "Male",
+        "mobile": "+91 9839055551",
+        "email": "rahul.verma@apexpharma.com",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "Lucknow Main Branch",
+        "department": "Sales & Marketing",
+        "role": "Pharma Sales Executive",
+        "status": "Active",
+        "joiningDate": "2026-04-01",
+        "basicSalary": 15000,
+        "hra": 5000,
+        "allowance": 5000,
+        "grossSalary": 25000,
+        "advanceGiven": 5000,
+        "otherDeduction": 0,
+        "netSalary": 20000,
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c5e",
+        "employeeId": "EMP-002",
+        "employeeName": "Neha Singh",
+        "gender": "Female",
+        "mobile": "+91 9839055552",
+        "email": "neha.singh@apexpharma.com",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "Lucknow Main Branch",
+        "department": "Accounts & Finance",
+        "role": "Accountant",
+        "status": "Active",
+        "joiningDate": "2026-04-01",
+        "basicSalary": 15000,
+        "hra": 5000,
+        "allowance": 5000,
+        "grossSalary": 25000,
+        "advanceGiven": 0,
+        "otherDeduction": 2000,
+        "netSalary": 23000,
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c5f",
+        "employeeId": "EMP-003",
+        "employeeName": "Mohit Kumar",
+        "gender": "Male",
+        "mobile": "+91 9839055553",
+        "email": "mohit.kumar@apexpharma.com",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "Lucknow Main Branch",
+        "department": "Warehouse & Logistics",
+        "role": "Store & Dispatch Executive",
+        "status": "Active",
+        "joiningDate": "2026-04-01",
+        "basicSalary": 12000,
+        "hra": 4000,
+        "allowance": 4000,
+        "grossSalary": 20000,
+        "advanceGiven": 0,
+        "otherDeduction": 0,
+        "netSalary": 20000,
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      }
+    ],
+    "Sale": [
+      {
+        "_id": "6ad86eb3582278adbbc86c32",
+        "invoiceNo": "APD-001",
+        "saleDate": "2026-04-08",
+        "referenceNo": "ORD-001",
+        "biller": "Amit Sharma",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "6ad86e7477a82df88303aa81",
+        "warehouse": "6ad86e7477a82df88303aa82",
+        "customer": "6ad86eb3582278adbbc86c2d",
+        "customerMobile": "+91 9839033333",
+        "orderItems": [
+          {
+            "name": "Pharma Tablet A - Demo",
+            "code": "PT-A",
+            "quantity": 60,
+            "netUnitPrice": 1500,
+            "discount": 0,
+            "taxPercent": 18,
+            "total": 106200,
+            "batch": "PTA-001",
+            "product": "6ad86eb3582278adbbc86c2f"
+          }
+        ],
+        "subTotal": 90000,
+        "discountTotal": 0,
+        "taxTotal": 16200,
+        "grandTotal": 106200,
+        "amountPaid": 70000,
+        "paymentMode": "Credit",
+        "saleStatus": "Completed",
+        "paymentStatus": "Partial",
+        "saleNote": "Sell 60 BOX at 1,500. Output CGST 8,100; Output SGST 8,100. Batch PTA-001.",
+        "createdAt": "2026-04-08T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.733Z"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c33",
+        "invoiceNo": "APD-002",
+        "saleDate": "2026-04-10",
+        "referenceNo": "ORD-002",
+        "biller": "Amit Sharma",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "6ad86e7477a82df88303aa81",
+        "warehouse": "6ad86e7477a82df88303aa82",
+        "customer": "6ad86eb3582278adbbc86c2e",
+        "customerMobile": "+91 9839044444",
+        "orderItems": [
+          {
+            "name": "Pharma Tablet A - Demo",
+            "code": "PT-A",
+            "quantity": 30,
+            "netUnitPrice": 1600,
+            "discount": 0,
+            "taxPercent": 18,
+            "total": 56640,
+            "batch": "PTA-001",
+            "product": "6ad86eb3582278adbbc86c2f"
+          }
+        ],
+        "subTotal": 48000,
+        "discountTotal": 0,
+        "taxTotal": 8640,
+        "grandTotal": 56640,
+        "amountPaid": 30000,
+        "paymentMode": "Credit",
+        "saleStatus": "Completed",
+        "paymentStatus": "Partial",
+        "saleNote": "Sell 30 BOX at 1,600. Output CGST 4,320; Output SGST 4,320. Batch PTA-001.",
+        "createdAt": "2026-04-10T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.733Z"
+      }
+    ],
+    "Purchase": [
+      {
+        "_id": "6ad86eb3582278adbbc86c30",
+        "purchaseNo": "PUR-001",
+        "referenceNo": "PPL-001",
+        "purchaseDate": "2026-04-04",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "6ad86e7477a82df88303aa81",
+        "warehouse": "6ad86e7477a82df88303aa82",
+        "supplier": "6ad86eb3582278adbbc86c2b",
+        "paymentTerm": "30",
+        "dueDate": "2026-05-04",
+        "purchaseStatus": "Received",
+        "paymentStatus": "Partial",
+        "currency": "INR",
+        "orderItems": [
+          {
+            "name": "Pharma Tablet A - Demo",
+            "code": "PT-A",
+            "quantity": 100,
+            "netUnitCost": 1000,
+            "productPrice": 1500,
+            "discount": 0,
+            "taxPercent": 18,
+            "batch": "PTA-001",
+            "mfgDate": "2026-01-01",
+            "expDate": "2027-12-31",
+            "product": "6ad86eb3582278adbbc86c2f"
+          }
+        ],
+        "orderTax": "18% GST",
+        "discountValue": 0,
+        "shippingCost": 0,
+        "grandTotal": 118000,
+        "amountPaid": 80000,
+        "note": "Buy 100 BOX at 1,000. Input CGST 9,000 + SGST 9,000. Batch PTA-001.",
+        "createdAt": "2026-04-04T11:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.724Z"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c31",
+        "purchaseNo": "PUR-002",
+        "referenceNo": "MHD-001",
+        "purchaseDate": "2026-04-06",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "6ad86e7477a82df88303aa81",
+        "warehouse": "6ad86e7477a82df88303aa82",
+        "supplier": "6ad86eb3582278adbbc86c2c",
+        "paymentTerm": "30",
+        "dueDate": "2026-05-06",
+        "purchaseStatus": "Received",
+        "paymentStatus": "Partial",
+        "currency": "INR",
+        "orderItems": [
+          {
+            "name": "Pharma Tablet A - Demo",
+            "code": "PT-A",
+            "quantity": 50,
+            "netUnitCost": 1100,
+            "productPrice": 1600,
+            "discount": 0,
+            "taxPercent": 18,
+            "batch": "PTA-002",
+            "mfgDate": "2026-02-01",
+            "expDate": "2028-01-31",
+            "product": "6ad86eb3582278adbbc86c2f"
+          }
+        ],
+        "orderTax": "18% GST",
+        "discountValue": 0,
+        "shippingCost": 0,
+        "grandTotal": 64900,
+        "amountPaid": 30000,
+        "note": "Buy 50 BOX at 1,100. Input CGST 4,950 + SGST 4,950. Batch PTA-002.",
+        "createdAt": "2026-04-06T11:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.724Z"
+      }
+    ],
+    "Brand": [
+      {
+        "_id": "6ad878cd0734cf40f21cbb65",
+        "name": "Prime Pharma Laboratories",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "featured": true,
+        "status": true
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb66",
+        "name": "Modern Healthcare",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "featured": false,
+        "status": true
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb67",
+        "name": "Apex Pharma",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "featured": true,
+        "status": true
+      }
+    ],
+    "Category": [
+      {
+        "_id": "6ad878cd0734cf40f21cbb68",
+        "name": "Pharmaceutical Wholesale",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "parent": "None",
+        "status": true
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb69",
+        "name": "Antibiotics & Anti-infectives",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "parent": "Pharmaceutical Wholesale",
+        "status": true
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb6a",
+        "name": "Tablets & Capsules",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "parent": "Pharmaceutical Wholesale",
+        "status": true
+      }
+    ],
+    "Unit": [
+      {
+        "_id": "6ad878cd0734cf40f21cbb62",
+        "baseUnit": "None (Root Unit)",
+        "code": "BOX",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "name": "Box",
+        "operationValue": 1,
+        "operator": "None",
+        "unitCode": "BOX",
+        "unitName": "Box (Root Unit)"
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb63",
+        "baseUnit": "BOX",
+        "code": "STRIP",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "name": "Strip",
+        "operationValue": 10,
+        "operator": "/",
+        "unitCode": "STRIP",
+        "unitName": "Strip (10 Tablets)"
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb64",
+        "baseUnit": "STRIP",
+        "code": "TAB",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "name": "Tablet",
+        "operationValue": 10,
+        "operator": "/",
+        "unitCode": "TAB",
+        "unitName": "Tablet"
+      }
+    ],
+    "Adjustment": [
+      {
+        "_id": "6ad878cd979b754a910924e0",
+        "warehouse": "Main Pharma Godown",
+        "documentName": "ADJ-DMG-001",
+        "items": [
+          {
+            "name": "Pharma Tablet A - Demo",
+            "code": "PT-A",
+            "batch": "PTA-001",
+            "cost": 1000,
+            "quantity": 2,
+            "reason": "Damage in transit/handling"
+          }
+        ],
+        "note": "Workflow Test: 2 BOX of PTA-001 quarantined as damaged.",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-20T16:00:00.000Z"
+      }
+    ],
+    "Product": [
+      {
+        "_id": "6ad86eb3582278adbbc86c2f",
+        "productName": "Pharma Tablet A - Demo",
+        "productCode": "PT-A",
+        "sku": "PT-A",
+        "productType": "Standard",
+        "productUnit": "BOX",
+        "saleUnit": "BOX",
+        "purchaseUnit": "BOX",
+        "packingDetails": "10 strips x 10 tablets per BOX",
+        "productCost": "1000",
+        "productPrice": "1500",
+        "wholesalePrice": "1000",
+        "mrp": 2000,
+        "productTax": "18% GST",
+        "taxMethod": "Exclusive",
+        "currentStock": 55,
+        "alertQuantity": "10",
+        "hasInitialStock": false,
+        "initialStockQty": "0",
+        "batches": [
+          {
+            "batchNo": "PTA-001",
+            "mfgDate": "2026-01-01",
+            "expDate": "2027-12-31",
+            "cost": 1000,
+            "purchaseQty": 100,
+            "soldQty": 90,
+            "returnedQty": 5,
+            "remainingQty": 15,
+            "remainingValue": 15000
+          },
+          {
+            "batchNo": "PTA-002",
+            "mfgDate": "2026-02-01",
+            "expDate": "2028-01-31",
+            "cost": 1100,
+            "purchaseQty": 50,
+            "returnedQty": 10,
+            "remainingQty": 40,
+            "remainingValue": 44000
+          }
+        ],
+        "warehouseStocks": [
+          {
+            "warehouse": "Main Pharma Godown",
+            "stock": 55
+          }
+        ],
+        "valuation": "FIFO",
+        "dispatchRule": "FEFO",
+        "negativeStockAllowed": false,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T10:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.715Z"
+      }
+    ],
+    "Customer": [
+      {
+        "_id": "6ad86eb3582278adbbc86c2d",
+        "customerCode": "CUS-001",
+        "name": "City Care Medical Store",
+        "ownerName": "Rajesh Agarwal",
+        "businessName": "City Care Medical Store",
+        "type": "Customer / Chemist",
+        "category": "Pharma Retailer",
+        "phone": "+91 9839033333",
+        "email": "citycare@gmail.com",
+        "pan": "AABCU3333C",
+        "gstin": "09AABCU3333C1Z3",
+        "creditLimit": 50000,
+        "creditPeriod": 15,
+        "openingBalance": 0,
+        "balanceType": "Dr",
+        "drugLicenceNo": "DL-20B-56789/21B-12345",
+        "drugLicenceValidity": "2028-06-30",
+        "billingAddress": {
+          "street": "Hazratganj Main Road",
+          "city": "Lucknow",
+          "state": "Uttar Pradesh",
+          "zip": "226001"
+        },
+        "shippingAddress": {
+          "street": "Hazratganj Main Road",
+          "city": "Lucknow",
+          "state": "Uttar Pradesh",
+          "zip": "226001"
+        },
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": true,
+        "createdAt": "2026-04-01T10:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.706Z",
+        "balance": 27350,
+        "currentDue": 27350
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c2e",
+        "customerCode": "CUS-002",
+        "name": "Sunrise Hospital Pharmacy",
+        "ownerName": "Dr. A. K. Verma",
+        "businessName": "Sunrise Hospital Pharmacy",
+        "type": "Customer / Hospital",
+        "category": "Hospital Pharmacy",
+        "phone": "+91 9839044444",
+        "email": "pharmacy@sunrisehospital.com",
+        "pan": "AABCS4444D",
+        "gstin": "09AABCS4444D1Z4",
+        "creditLimit": 100000,
+        "creditPeriod": 30,
+        "openingBalance": 0,
+        "balanceType": "Dr",
+        "drugLicenceNo": "DL-20B-90123/21B-45678",
+        "drugLicenceValidity": "2029-01-31",
+        "billingAddress": {
+          "street": "Gomti Nagar Extension",
+          "city": "Lucknow",
+          "state": "Uttar Pradesh",
+          "zip": "226010"
+        },
+        "shippingAddress": {
+          "street": "Gomti Nagar Extension",
+          "city": "Lucknow",
+          "state": "Uttar Pradesh",
+          "zip": "226010"
+        },
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": true,
+        "createdAt": "2026-04-01T10:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.706Z",
+        "balance": 26640,
+        "currentDue": 26640
+      }
+    ],
+    "Payment": [
+      {
+        "_id": "6ad86eb3582278adbbc86c3e",
+        "paymentNo": "PAY-001",
+        "paymentDate": "2026-04-02",
+        "paymentType": "Security Deposit",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Godown Owner",
+        "paymentAmount": 40000,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 03: Refundable office/godown Security Deposit Dr 40,000; Bank Cr 40,000.",
+        "createdAt": "2026-04-02T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c3f",
+        "paymentNo": "PAY-002",
+        "paymentDate": "2026-04-02",
+        "paymentType": "Rent",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Landlord",
+        "paymentAmount": 20000,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 04: April Rent Dr 20,000; Bank Cr 20,000.",
+        "createdAt": "2026-04-02T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c40",
+        "paymentNo": "PAY-003",
+        "paymentDate": "2026-04-03",
+        "paymentType": "Fixed Asset",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Furniture Vendor",
+        "paymentAmount": 59000,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 05: Furniture and racks Dr 50,000; Input CGST Dr 4,500; Input SGST Dr 4,500; Bank Cr 59,000.",
+        "createdAt": "2026-04-03T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c41",
+        "paymentNo": "PAY-004",
+        "paymentDate": "2026-04-03",
+        "paymentType": "Fixed Asset",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "IT Solutions Vendor",
+        "paymentAmount": 47200,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 06: Computer Dr 40,000; Input CGST Dr 3,600; Input SGST Dr 3,600; Bank Cr 47,200.",
+        "createdAt": "2026-04-03T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c42",
+        "paymentNo": "PAY-005",
+        "paymentDate": "2026-04-07",
+        "paymentType": "Supplier",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Prime Pharma Laboratories",
+        "invoiceNo": "PPL-001",
+        "paymentAmount": 80000,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 09: Prime Pharma Laboratories Dr 80,000; Bank Cr 80,000 (against PPL-001).",
+        "createdAt": "2026-04-07T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c43",
+        "paymentNo": "PAY-006",
+        "paymentDate": "2026-04-16",
+        "paymentType": "Supplier",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Modern Healthcare Distributors",
+        "invoiceNo": "MHD-001",
+        "paymentAmount": 30000,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 16: Modern Healthcare Distributors Dr 30,000; Bank Cr 30,000 (against MHD-001).",
+        "createdAt": "2026-04-16T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c44",
+        "paymentNo": "PAY-007",
+        "paymentDate": "2026-04-17",
+        "paymentType": "Employee Advance",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Rahul Verma",
+        "paymentAmount": 5000,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 17: Employee Advance - Rahul Dr 5,000; Bank Cr 5,000.",
+        "createdAt": "2026-04-17T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c45",
+        "paymentNo": "PAY-008",
+        "paymentDate": "2026-04-18",
+        "paymentType": "Utility",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Electricity Board",
+        "paymentAmount": 3500,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 18: Electricity Dr 3,500; Bank Cr 3,500.",
+        "createdAt": "2026-04-18T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c46",
+        "paymentNo": "PAY-009",
+        "paymentDate": "2026-04-19",
+        "paymentType": "Utility",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Internet Service Provider",
+        "paymentAmount": 1500,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 19: Internet Dr 1,500; Bank Cr 1,500.",
+        "createdAt": "2026-04-19T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c47",
+        "paymentNo": "PAY-010",
+        "paymentDate": "2026-04-20",
+        "paymentType": "Marketing",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Marketing Agency",
+        "paymentAmount": 5000,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 20: Marketing Dr 5,000; Bank Cr 5,000.",
+        "createdAt": "2026-04-20T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c48",
+        "paymentNo": "PAY-011",
+        "paymentDate": "2026-04-21",
+        "paymentType": "Stationery",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Stationery Shop",
+        "paymentAmount": 2000,
+        "paymentMethod": "Cash",
+        "paidFromAccount": "Cash",
+        "remarks": "Entry 21: Stationery Dr 2,000; Cash Cr 2,000.",
+        "createdAt": "2026-04-21T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c49",
+        "paymentNo": "PAY-012",
+        "paymentDate": "2026-04-23",
+        "paymentType": "Drawings",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Amit Sharma (Drawings)",
+        "paymentAmount": 10000,
+        "paymentMethod": "Cash",
+        "paidFromAccount": "Cash",
+        "remarks": "Entry 23: Owner Drawings Dr 10,000; Cash Cr 10,000.",
+        "createdAt": "2026-04-23T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c4a",
+        "paymentNo": "PAY-013",
+        "paymentDate": "2026-04-24",
+        "paymentType": "Insurance",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Insurance Company",
+        "paymentAmount": 12000,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 24: Prepaid Insurance Dr 12,000; Bank Cr 12,000 (12 months from 01 April).",
+        "createdAt": "2026-04-24T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c4b",
+        "paymentNo": "PAY-014",
+        "paymentDate": "2026-04-25",
+        "paymentType": "Bank Charges",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Bank",
+        "paymentAmount": 500,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 25: Bank Charges Dr 500; Bank Cr 500.",
+        "createdAt": "2026-04-25T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c4c",
+        "paymentNo": "PAY-015",
+        "paymentDate": "2026-04-30",
+        "paymentType": "Payroll",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Staff Net Salary",
+        "paymentAmount": 63000,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 27: Total Salary Payable Dr 63,000; Bank Cr 63,000 (Rahul 20k, Neha 23k, Mohit 20k).",
+        "createdAt": "2026-04-30T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c4d",
+        "paymentNo": "PAY-016",
+        "paymentDate": "2026-04-30",
+        "paymentType": "Loan Repayment",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "supplierParty": "Bank (Loan Dept)",
+        "paymentAmount": 12000,
+        "paymentMethod": "Bank",
+        "paidFromAccount": "Business Bank Account",
+        "remarks": "Entry 28: Business Loan Dr 10,000; Interest Expense Dr 2,000; Bank Cr 12,000.",
+        "createdAt": "2026-04-30T12:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.787Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      }
+    ],
+    "Supplier": [
+      {
+        "_id": "6ad86eb3582278adbbc86c2b",
+        "supplierCode": "SUP-001",
+        "type": "Supplier / Manufacturer",
+        "companyName": "Prime Pharma Laboratories",
+        "contactPerson": "Vikas Sharma",
+        "phone": "+91 9839011111",
+        "email": "sales@primepharma.com",
+        "paymentTerms": "30 days",
+        "creditLimit": 200000,
+        "balance": 38000,
+        "gstStatus": "Registered",
+        "gstin": "09AABCP1111A1Z1",
+        "pan": "AABCP1111A",
+        "taxPreference": "Taxable",
+        "drugLicenceNo": "DL-20B-78901/21B-23456",
+        "drugLicenceValidity": "2028-12-31",
+        "billingAddress": {
+          "street1": "Phase 1, Industrial Area",
+          "city": "Lucknow",
+          "state": "Uttar Pradesh",
+          "zip": "226012",
+          "country": "India"
+        },
+        "shippingAddress": {
+          "street1": "Phase 1, Industrial Area",
+          "city": "Lucknow",
+          "state": "Uttar Pradesh",
+          "zip": "226012",
+          "country": "India"
+        },
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": true,
+        "createdAt": "2026-04-01T10:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.687Z",
+        "creditPeriod": 30,
+        "paymentTerm": "30"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c2c",
+        "supplierCode": "SUP-002",
+        "type": "Supplier / Distributor",
+        "companyName": "Modern Healthcare Distributors",
+        "contactPerson": "Sanjay Gupta",
+        "phone": "+91 9839022222",
+        "email": "orders@modernhealthcare.com",
+        "paymentTerms": "30 days",
+        "creditLimit": 150000,
+        "balance": 21920,
+        "gstStatus": "Registered",
+        "gstin": "09AABCM2222B1Z2",
+        "pan": "AABCM2222B",
+        "taxPreference": "Taxable",
+        "drugLicenceNo": "DL-20B-34567/21B-89012",
+        "drugLicenceValidity": "2028-10-31",
+        "billingAddress": {
+          "street1": "Aminabad Market",
+          "city": "Lucknow",
+          "state": "Uttar Pradesh",
+          "zip": "226018",
+          "country": "India"
+        },
+        "shippingAddress": {
+          "street1": "Aminabad Market",
+          "city": "Lucknow",
+          "state": "Uttar Pradesh",
+          "zip": "226018",
+          "country": "India"
+        },
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": true,
+        "createdAt": "2026-04-01T10:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.687Z",
+        "creditPeriod": 30,
+        "paymentTerm": "30"
+      }
+    ],
+    "AccountLedger": [
+      {
+        "_id": "6ad86e7477a82df88303aa83",
+        "accountName": "Owner Capital",
+        "groupType": "Equity",
+        "balanceType": "Cr",
+        "description": "Amit Sharma Capital A/C",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.409Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa84",
+        "accountName": "Owner Drawings",
+        "groupType": "Equity",
+        "balanceType": "Dr",
+        "description": "Drawings for personal use",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.451Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa85",
+        "accountName": "Business Loan",
+        "groupType": "Liability",
+        "balanceType": "Cr",
+        "description": "Business Loan A/C",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.461Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa86",
+        "accountName": "Business Bank Account",
+        "groupType": "Asset",
+        "balanceType": "Dr",
+        "description": "Main Bank Account",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.470Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa87",
+        "accountName": "Cash",
+        "groupType": "Asset",
+        "balanceType": "Dr",
+        "description": "Cash in Hand",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.477Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa88",
+        "accountName": "Security Deposit",
+        "groupType": "Asset",
+        "balanceType": "Dr",
+        "description": "Refundable Godown/Office Deposit",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.484Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa89",
+        "accountName": "Furniture",
+        "groupType": "Asset",
+        "balanceType": "Dr",
+        "description": "Furniture and medicine racks",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.492Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa8a",
+        "accountName": "Computer",
+        "groupType": "Asset",
+        "balanceType": "Dr",
+        "description": "Office Computers and IT Assets",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.498Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa8b",
+        "accountName": "Prepaid Insurance",
+        "groupType": "Asset",
+        "balanceType": "Dr",
+        "description": "Prepaid Business Insurance",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.509Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa8c",
+        "accountName": "Employee Advance - Rahul",
+        "groupType": "Asset",
+        "balanceType": "Dr",
+        "description": "Advance against salary",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.516Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa8d",
+        "accountName": "Inventory / Purchase",
+        "groupType": "Asset",
+        "balanceType": "Dr",
+        "description": "Trading Goods / Purchases",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.523Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa8e",
+        "accountName": "Sales",
+        "groupType": "Income",
+        "balanceType": "Cr",
+        "description": "Pharma Wholesale Sales",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.529Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa8f",
+        "accountName": "Sales Return",
+        "groupType": "Income",
+        "balanceType": "Dr",
+        "description": "Returns from Customers",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.536Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa90",
+        "accountName": "Purchase Return",
+        "groupType": "Expense",
+        "balanceType": "Cr",
+        "description": "Returns to Suppliers",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.542Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa91",
+        "accountName": "Input CGST",
+        "groupType": "Asset",
+        "balanceType": "Dr",
+        "description": "Input Central GST Credit",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.548Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa92",
+        "accountName": "Input SGST",
+        "groupType": "Asset",
+        "balanceType": "Dr",
+        "description": "Input State GST Credit",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.555Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa93",
+        "accountName": "Output CGST",
+        "groupType": "Liability",
+        "balanceType": "Cr",
+        "description": "Output Central GST Collected",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.562Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa94",
+        "accountName": "Output SGST",
+        "groupType": "Liability",
+        "balanceType": "Cr",
+        "description": "Output State GST Collected",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.568Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa95",
+        "accountName": "Salary Expense",
+        "groupType": "Expense",
+        "balanceType": "Dr",
+        "description": "Staff Salaries",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.575Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa96",
+        "accountName": "Salary Payable",
+        "groupType": "Liability",
+        "balanceType": "Cr",
+        "description": "Salary Liability",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.581Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa97",
+        "accountName": "Other Salary Deduction Payable",
+        "groupType": "Liability",
+        "balanceType": "Cr",
+        "description": "Staff Deductions",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.588Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa98",
+        "accountName": "Rent",
+        "groupType": "Expense",
+        "balanceType": "Dr",
+        "description": "Godown & Office Rent",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.593Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa99",
+        "accountName": "Electricity",
+        "groupType": "Expense",
+        "balanceType": "Dr",
+        "description": "Utility - Electricity",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.598Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa9a",
+        "accountName": "Internet",
+        "groupType": "Expense",
+        "balanceType": "Dr",
+        "description": "Utility - Internet",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.605Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa9b",
+        "accountName": "Marketing",
+        "groupType": "Expense",
+        "balanceType": "Dr",
+        "description": "Sales & Promotion",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.612Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa9c",
+        "accountName": "Stationery",
+        "groupType": "Expense",
+        "balanceType": "Dr",
+        "description": "Office Stationery",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.617Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa9d",
+        "accountName": "Bank Charges",
+        "groupType": "Expense",
+        "balanceType": "Dr",
+        "description": "Bank fee and charges",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.624Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa9e",
+        "accountName": "Interest Expense",
+        "groupType": "Expense",
+        "balanceType": "Dr",
+        "description": "Interest on Business Loan",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.629Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aa9f",
+        "accountName": "Insurance Expense",
+        "groupType": "Expense",
+        "balanceType": "Dr",
+        "description": "Monthly Insurance Expense",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.635Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aaa0",
+        "accountName": "Depreciation Expense",
+        "groupType": "Expense",
+        "balanceType": "Dr",
+        "description": "Asset Depreciation",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.641Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aaa1",
+        "accountName": "Accumulated Depreciation - Furniture",
+        "groupType": "Asset",
+        "balanceType": "Cr",
+        "description": "Contra Asset - Furniture",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.646Z"
+      },
+      {
+        "_id": "6ad86e7477a82df88303aaa2",
+        "accountName": "Accumulated Depreciation - Computer",
+        "groupType": "Asset",
+        "balanceType": "Cr",
+        "description": "Contra Asset - Computer",
+        "openingBalance": 0,
+        "isActive": true,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.652Z"
+      }
+    ],
+    "CreditNote": [
+      {
+        "_id": "6ad86eb3582278adbbc86c34",
+        "creditNoteNo": "CN-001",
+        "voucherNo": "VCH-CN-001",
+        "date": "2026-04-14",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "Lucknow Main Branch",
+        "type": "Sales Return",
+        "status": "Approved",
+        "customer": "City Care Medical Store",
+        "customerCode": "CUS-001",
+        "originalInvoiceNo": "APD-001",
+        "originalInvoiceDate": "2026-04-08",
+        "items": [
+          {
+            "product": "Pharma Tablet A - Demo",
+            "batch": "PTA-001",
+            "qty": 5,
+            "rate": 1500,
+            "taxPercent": 18,
+            "amount": 8850
+          }
+        ],
+        "cgst": 675,
+        "sgst": 675,
+        "summary": {
+          "subTotal": 7500,
+          "grandTotal": 8850
+        },
+        "remarks": "City Care Medical Store returns 5 BOX at 1,500. Restored to batch PTA-001.",
+        "createdAt": "2026-04-14T14:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.745Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      }
+    ],
+    "DebitNote": [
+      {
+        "_id": "6ad86eb3582278adbbc86c36",
+        "debitNoteNo": "DN-001",
+        "voucherNo": "VCH-DN-001",
+        "noteNo": "NOTE-DN-001",
+        "date": "2026-04-15",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "Lucknow Main Branch",
+        "type": "Purchase Return",
+        "status": "Approved",
+        "supplier": "Modern Healthcare Distributors",
+        "originalInvoiceNo": "MHD-001",
+        "originalInvoiceDate": "2026-04-06",
+        "items": [
+          {
+            "product": "Pharma Tablet A - Demo",
+            "qty": 10,
+            "rate": 1100,
+            "amount": 11000
+          }
+        ],
+        "discount": 0,
+        "taxAmount": 1980,
+        "summary": {
+          "subTotal": 11000,
+          "grandTotal": 12980
+        },
+        "remarks": "Return 10 BOX at 1,100 to Modern Healthcare Distributors. Batch PTA-002.",
+        "createdAt": "2026-04-15T15:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.758Z",
+        "companyId": "6ad86e7477a82df88303aa7f"
+      }
+    ],
+    "SalaryStructure": [
+      {
+        "_id": "6ad878cd979b754a910924d2",
+        "code": "SS-RAHUL",
+        "name": "Salary Structure - Rahul Verma",
+        "employeeId": "EMP-001",
+        "employeeName": "Rahul Verma",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "Lucknow Main Branch",
+        "department": "Sales & Marketing",
+        "designation": "Pharma Sales Executive",
+        "currency": "INR",
+        "effectiveFrom": "2026-04-01",
+        "status": "Active",
+        "workingDays": "30",
+        "earnings": [
+          {
+            "component": "Basic Salary",
+            "type": "Fixed",
+            "amount": 15000,
+            "calculatedValue": 15000
+          },
+          {
+            "component": "HRA",
+            "type": "Fixed",
+            "amount": 5000,
+            "calculatedValue": 5000
+          },
+          {
+            "component": "Conveyance & Medical",
+            "type": "Fixed",
+            "amount": 5000,
+            "calculatedValue": 5000
+          }
+        ],
+        "deductions": [
+          {
+            "component": "Salary Advance Recovery",
+            "type": "Fixed",
+            "amount": 5000,
+            "calculatedValue": 5000
+          }
+        ],
+        "totals": {
+          "basic": 15000,
+          "grossEarnings": 25000,
+          "totalDeductions": 5000,
+          "netSalary": 20000,
+          "employerCost": 25000,
+          "ctc": 25000
+        },
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T08:33:17.457Z"
+      },
+      {
+        "_id": "6ad878cd979b754a910924d3",
+        "code": "SS-NEHA",
+        "name": "Salary Structure - Neha Singh",
+        "employeeId": "EMP-002",
+        "employeeName": "Neha Singh",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "Lucknow Main Branch",
+        "department": "Accounts & Finance",
+        "designation": "Accountant",
+        "currency": "INR",
+        "effectiveFrom": "2026-04-01",
+        "status": "Active",
+        "workingDays": "30",
+        "earnings": [
+          {
+            "component": "Basic Salary",
+            "type": "Fixed",
+            "amount": 15000,
+            "calculatedValue": 15000
+          },
+          {
+            "component": "HRA",
+            "type": "Fixed",
+            "amount": 5000,
+            "calculatedValue": 5000
+          },
+          {
+            "component": "Special Allowance",
+            "type": "Fixed",
+            "amount": 5000,
+            "calculatedValue": 5000
+          }
+        ],
+        "deductions": [
+          {
+            "component": "Other Salary Deduction",
+            "type": "Fixed",
+            "amount": 2000,
+            "calculatedValue": 2000
+          }
+        ],
+        "totals": {
+          "basic": 15000,
+          "grossEarnings": 25000,
+          "totalDeductions": 2000,
+          "netSalary": 23000,
+          "employerCost": 25000,
+          "ctc": 25000
+        },
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T08:33:17.457Z"
+      },
+      {
+        "_id": "6ad878cd979b754a910924d4",
+        "code": "SS-MOHIT",
+        "name": "Salary Structure - Mohit Kumar",
+        "employeeId": "EMP-003",
+        "employeeName": "Mohit Kumar",
+        "company": "6ad86e7477a82df88303aa7f",
+        "branch": "Lucknow Main Branch",
+        "department": "Warehouse & Logistics",
+        "designation": "Store & Dispatch Executive",
+        "currency": "INR",
+        "effectiveFrom": "2026-04-01",
+        "status": "Active",
+        "workingDays": "30",
+        "earnings": [
+          {
+            "component": "Basic Salary",
+            "type": "Fixed",
+            "amount": 12000,
+            "calculatedValue": 12000
+          },
+          {
+            "component": "HRA",
+            "type": "Fixed",
+            "amount": 4000,
+            "calculatedValue": 4000
+          },
+          {
+            "component": "Warehouse Allowance",
+            "type": "Fixed",
+            "amount": 4000,
+            "calculatedValue": 4000
+          }
+        ],
+        "deductions": [],
+        "totals": {
+          "basic": 12000,
+          "grossEarnings": 20000,
+          "totalDeductions": 0,
+          "netSalary": 20000,
+          "employerCost": 20000,
+          "ctc": 20000
+        },
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T08:33:17.457Z"
+      }
+    ],
+    "Department": [
+      {
+        "_id": "6ad878cd0734cf40f21cbb5f",
+        "deptCode": "D-SALES",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "deptName": "Sales & Marketing",
+        "description": "Pharma Field Sales, Distribution & Marketing",
+        "status": "Active",
+        "updatedAt": "2026-10-21T08:33:17.420Z"
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb60",
+        "deptCode": "D-ACCTS",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "deptName": "Accounts & Finance",
+        "description": "Billing, Bookkeeping, Taxation & Payroll",
+        "status": "Active",
+        "updatedAt": "2026-10-21T08:33:17.420Z"
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb61",
+        "deptCode": "D-LOGIS",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "deptName": "Warehouse & Logistics",
+        "description": "Godown Management, Batch Sorting & Dispatch",
+        "status": "Active",
+        "updatedAt": "2026-10-21T08:33:17.420Z"
+      }
+    ],
+    "ExpenseCategory": [
+      {
+        "_id": "6ad878cd979b754a910924d8",
+        "name": "Office & Godown Rent",
+        "description": "Monthly rent for warehouse & office",
+        "company": "6ad86e7477a82df88303aa7f",
+        "isActive": true
+      },
+      {
+        "_id": "6ad878cd979b754a910924d9",
+        "name": "Electricity & Utilities",
+        "description": "Power and electricity bills",
+        "company": "6ad86e7477a82df88303aa7f",
+        "isActive": true
+      },
+      {
+        "_id": "6ad878cd979b754a910924da",
+        "name": "Internet & Communications",
+        "description": "Broadband and phone expenses",
+        "company": "6ad86e7477a82df88303aa7f",
+        "isActive": true
+      },
+      {
+        "_id": "6ad878cd979b754a910924db",
+        "name": "Marketing & Promotions",
+        "description": "Chemist visits, samples and marketing",
+        "company": "6ad86e7477a82df88303aa7f",
+        "isActive": true
+      },
+      {
+        "_id": "6ad878cd979b754a910924dc",
+        "name": "Office Stationery",
+        "description": "Paper, bills, packaging supplies",
+        "company": "6ad86e7477a82df88303aa7f",
+        "isActive": true
+      },
+      {
+        "_id": "6ad878cd979b754a910924dd",
+        "name": "Bank Charges & Interest",
+        "description": "Loan interest and bank service fees",
+        "company": "6ad86e7477a82df88303aa7f",
+        "isActive": true
+      },
+      {
+        "_id": "6ad878cd979b754a910924de",
+        "name": "Insurance Expense",
+        "description": "Stock & premises insurance coverage",
+        "company": "6ad86e7477a82df88303aa7f",
+        "isActive": true
+      },
+      {
+        "_id": "6ad878cd979b754a910924df",
+        "name": "Staff Welfare & Advance",
+        "description": "Employee advances and welfare",
+        "company": "6ad86e7477a82df88303aa7f",
+        "isActive": true
+      }
+    ],
+    "Payslip": [
+      {
+        "_id": "6ad878cd979b754a910924d5",
+        "employee": "6ad86eb3582278adbbc86c5d",
+        "month": "April",
+        "year": "2026",
+        "workingDays": 30,
+        "paidDays": 30,
+        "basicSalary": 15000,
+        "hra": 5000,
+        "da": 0,
+        "otherAllowances": 5000,
+        "pfDeduction": 0,
+        "esiDeduction": 0,
+        "loanDeduction": 5000,
+        "grossEarnings": 25000,
+        "totalDeductions": 5000,
+        "netPay": 20000,
+        "status": "Paid",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-30T17:00:00.000Z",
+        "updatedAt": "2026-10-21T08:33:17.469Z"
+      },
+      {
+        "_id": "6ad878cd979b754a910924d6",
+        "employee": "6ad86eb3582278adbbc86c5e",
+        "month": "April",
+        "year": "2026",
+        "workingDays": 30,
+        "paidDays": 30,
+        "basicSalary": 15000,
+        "hra": 5000,
+        "da": 0,
+        "otherAllowances": 5000,
+        "pfDeduction": 0,
+        "esiDeduction": 0,
+        "loanDeduction": 2000,
+        "grossEarnings": 25000,
+        "totalDeductions": 2000,
+        "netPay": 23000,
+        "status": "Paid",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-30T17:00:00.000Z",
+        "updatedAt": "2026-10-21T08:33:17.469Z"
+      },
+      {
+        "_id": "6ad878cd979b754a910924d7",
+        "employee": "6ad86eb3582278adbbc86c5f",
+        "month": "April",
+        "year": "2026",
+        "workingDays": 30,
+        "paidDays": 30,
+        "basicSalary": 12000,
+        "hra": 4000,
+        "da": 0,
+        "otherAllowances": 4000,
+        "pfDeduction": 0,
+        "esiDeduction": 0,
+        "loanDeduction": 0,
+        "grossEarnings": 20000,
+        "totalDeductions": 0,
+        "netPay": 20000,
+        "status": "Paid",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-30T17:00:00.000Z",
+        "updatedAt": "2026-10-21T08:33:17.469Z"
+      }
+    ],
+    "Voucher": [
+      {
+        "_id": "6ad86eb3582278adbbc86c60",
+        "voucherNo": "JV-001",
+        "date": "2026-04-01",
+        "voucherType": "Receipt",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "generalNarration": "Entry 01: Owner Capital Introduced (Bank 900,000 + Cash 100,000)",
+        "totalDebit": 1000000,
+        "totalCredit": 1000000,
+        "entries": [
+          {
+            "account": "6ad86e7477a82df88303aa86",
+            "debitAmount": 900000,
+            "creditAmount": 0,
+            "narration": "Bank Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa87",
+            "debitAmount": 100000,
+            "creditAmount": 0,
+            "narration": "Cash Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa83",
+            "debitAmount": 0,
+            "creditAmount": 1000000,
+            "narration": "Owner Capital Cr"
+          }
+        ],
+        "createdAt": "2026-04-01T18:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.858Z"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c61",
+        "voucherNo": "JV-002",
+        "date": "2026-04-01",
+        "voucherType": "Receipt",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "generalNarration": "Entry 02: Business Loan received in Bank",
+        "totalDebit": 200000,
+        "totalCredit": 200000,
+        "entries": [
+          {
+            "account": "6ad86e7477a82df88303aa86",
+            "debitAmount": 200000,
+            "creditAmount": 0,
+            "narration": "Bank Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa85",
+            "debitAmount": 0,
+            "creditAmount": 200000,
+            "narration": "Business Loan Cr"
+          }
+        ],
+        "createdAt": "2026-04-01T18:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.858Z"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c62",
+        "voucherNo": "JV-003",
+        "date": "2026-04-03",
+        "voucherType": "Payment",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "generalNarration": "Entry 05: Furniture and medicine racks Dr 50,000; Input CGST 4,500; Input SGST 4,500; Bank Cr 59,000.",
+        "totalDebit": 59000,
+        "totalCredit": 59000,
+        "entries": [
+          {
+            "account": "6ad86e7477a82df88303aa89",
+            "debitAmount": 50000,
+            "creditAmount": 0,
+            "narration": "Furniture Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa91",
+            "debitAmount": 4500,
+            "creditAmount": 0,
+            "narration": "Input CGST Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa92",
+            "debitAmount": 4500,
+            "creditAmount": 0,
+            "narration": "Input SGST Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa86",
+            "debitAmount": 0,
+            "creditAmount": 59000,
+            "narration": "Bank Cr"
+          }
+        ],
+        "createdAt": "2026-04-03T18:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.858Z"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c63",
+        "voucherNo": "JV-004",
+        "date": "2026-04-03",
+        "voucherType": "Payment",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "generalNarration": "Entry 06: Computer Dr 40,000; Input CGST 3,600; Input SGST 3,600; Bank Cr 47,200.",
+        "totalDebit": 47200,
+        "totalCredit": 47200,
+        "entries": [
+          {
+            "account": "6ad86e7477a82df88303aa8a",
+            "debitAmount": 40000,
+            "creditAmount": 0,
+            "narration": "Computer Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa91",
+            "debitAmount": 3600,
+            "creditAmount": 0,
+            "narration": "Input CGST Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa92",
+            "debitAmount": 3600,
+            "creditAmount": 0,
+            "narration": "Input SGST Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa86",
+            "debitAmount": 0,
+            "creditAmount": 47200,
+            "narration": "Bank Cr"
+          }
+        ],
+        "createdAt": "2026-04-03T18:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.858Z"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c64",
+        "voucherNo": "JV-005",
+        "date": "2026-04-30",
+        "voucherType": "Journal",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "generalNarration": "Entry 26: Salary Accrual for April 2026 (Expense Dr 70,000; Advance Cr 5,000; Other Deduction Cr 2,000; Salary Payable Cr 63,000)",
+        "totalDebit": 70000,
+        "totalCredit": 70000,
+        "entries": [
+          {
+            "account": "6ad86e7477a82df88303aa95",
+            "debitAmount": 70000,
+            "creditAmount": 0,
+            "narration": "Salary Expense Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa8c",
+            "debitAmount": 0,
+            "creditAmount": 5000,
+            "narration": "Employee Advance Cr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa97",
+            "debitAmount": 0,
+            "creditAmount": 2000,
+            "narration": "Other Deduction Cr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa96",
+            "debitAmount": 0,
+            "creditAmount": 63000,
+            "narration": "Salary Payable Cr"
+          }
+        ],
+        "createdAt": "2026-04-30T18:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.858Z"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c65",
+        "voucherNo": "JV-006",
+        "date": "2026-04-30",
+        "voucherType": "Payment",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "generalNarration": "Entry 28: Business Loan Dr 10,000; Interest Expense Dr 2,000; Bank Cr 12,000.",
+        "totalDebit": 12000,
+        "totalCredit": 12000,
+        "entries": [
+          {
+            "account": "6ad86e7477a82df88303aa85",
+            "debitAmount": 10000,
+            "creditAmount": 0,
+            "narration": "Loan Principal Repayment Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa9e",
+            "debitAmount": 2000,
+            "creditAmount": 0,
+            "narration": "Interest Expense Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa86",
+            "debitAmount": 0,
+            "creditAmount": 12000,
+            "narration": "Bank Cr"
+          }
+        ],
+        "createdAt": "2026-04-30T18:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.858Z"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c66",
+        "voucherNo": "JV-007",
+        "date": "2026-04-30",
+        "voucherType": "Journal",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "generalNarration": "Entry 29: Insurance Expense Dr 1,000; Prepaid Insurance Cr 1,000.",
+        "totalDebit": 1000,
+        "totalCredit": 1000,
+        "entries": [
+          {
+            "account": "6ad86e7477a82df88303aa9f",
+            "debitAmount": 1000,
+            "creditAmount": 0,
+            "narration": "Monthly Insurance Expense Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa8b",
+            "debitAmount": 0,
+            "creditAmount": 1000,
+            "narration": "Prepaid Insurance Cr"
+          }
+        ],
+        "createdAt": "2026-04-30T18:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.858Z"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c67",
+        "voucherNo": "JV-008",
+        "date": "2026-04-30",
+        "voucherType": "Journal",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "generalNarration": "Entry 30: Depreciation Expense Dr 1,500; Acc. Dep Furniture Cr 500; Acc. Dep Computer Cr 1,000.",
+        "totalDebit": 1500,
+        "totalCredit": 1500,
+        "entries": [
+          {
+            "account": "6ad86e7477a82df88303aaa0",
+            "debitAmount": 1500,
+            "creditAmount": 0,
+            "narration": "Depreciation Expense Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aaa1",
+            "debitAmount": 0,
+            "creditAmount": 500,
+            "narration": "Acc Dep Furniture Cr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aaa2",
+            "debitAmount": 0,
+            "creditAmount": 1000,
+            "narration": "Acc Dep Computer Cr"
+          }
+        ],
+        "createdAt": "2026-04-30T18:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.858Z"
+      },
+      {
+        "_id": "6ad86eb3582278adbbc86c68",
+        "voucherNo": "JV-009",
+        "date": "2026-04-30",
+        "voucherType": "Journal",
+        "company": "6ad86e7477a82df88303aa7f",
+        "status": "Posted",
+        "generalNarration": "Entry 31: GST set-off: Output CGST Dr 11,745 / Input CGST Cr 11,745; Output SGST Dr 11,745 / Input SGST Cr 11,745.",
+        "totalDebit": 23490,
+        "totalCredit": 23490,
+        "entries": [
+          {
+            "account": "6ad86e7477a82df88303aa93",
+            "debitAmount": 11745,
+            "creditAmount": 0,
+            "narration": "Output CGST Set-off Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa94",
+            "debitAmount": 11745,
+            "creditAmount": 0,
+            "narration": "Output SGST Set-off Dr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa91",
+            "debitAmount": 0,
+            "creditAmount": 11745,
+            "narration": "Input CGST Adjusted Cr"
+          },
+          {
+            "account": "6ad86e7477a82df88303aa92",
+            "debitAmount": 0,
+            "creditAmount": 11745,
+            "narration": "Input SGST Adjusted Cr"
+          }
+        ],
+        "createdAt": "2026-04-30T18:00:00.000Z",
+        "updatedAt": "2026-10-21T07:50:11.858Z"
+      }
+    ],
+    "Warehouse": [
+      {
+        "_id": "6ad86e7477a82df88303aa82",
+        "name": "Main Pharma Godown",
+        "code": "WH-LKO-01",
+        "location": "Indira Nagar, Lucknow",
+        "status": true,
+        "branch": "6ad86e7477a82df88303aa81",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.399Z"
+      }
+    ],
+    "Branch": [
+      {
+        "_id": "6ad86e7477a82df88303aa81",
+        "id": "BR-LKO-01",
+        "code": "LKO-MAIN",
+        "name": "Lucknow Main Branch",
+        "manager": "Amit Sharma",
+        "status": "Active",
+        "city": "Lucknow",
+        "state": "Uttar Pradesh",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T07:49:08.384Z"
+      }
+    ],
+    "PriceList": [
+      {
+        "_id": "6ad878cd0734cf40f21cbb6f",
+        "id": "PL-APD-01",
+        "applicableFor": "Retailer",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "currency": "INR",
+        "customerType": "Retailer",
+        "defaultPriceList": true,
+        "effectiveFrom": "2026-04-01",
+        "name": "Pharma Wholesale & Retail Price List 2026-27",
+        "notes": "Standard Pricing for Apex Pharma Distributors. Includes Retail and Wholesale slabs.",
+        "priceListCode": "PL-APD-01",
+        "priceType": "Sales",
+        "productPricing": [
+          {
+            "product": "Pharma Tablet A - Demo",
+            "sku": "PT-A",
+            "unit": "BOX",
+            "retailRate": "1500",
+            "wholesaleRate": "1000",
+            "effectiveFrom": "2026-04-01"
+          }
+        ],
+        "quantityPricing": [
+          {
+            "minQty": 1,
+            "maxQty": 49,
+            "price": "1500"
+          },
+          {
+            "minQty": 50,
+            "maxQty": 1000,
+            "price": "1000"
+          }
+        ],
+        "status": true
+      }
+    ],
+    "TaxSlab": [
+      {
+        "_id": "6ad878cd0734cf40f21cbb6b",
+        "id": "TAX-GST-18",
+        "cess": 0,
+        "cgst": 9,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "gstType": "CGST + SGST",
+        "igst": 18,
+        "name": "GST 18%",
+        "placeState": "Uttar Pradesh",
+        "rate": 18,
+        "sgst": 9,
+        "status": "Active",
+        "taxTreatment": "Intra-State",
+        "transactionPurchase": true,
+        "transactionSales": true,
+        "type": "GST"
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb6c",
+        "id": "TAX-GST-12",
+        "cess": 0,
+        "cgst": 6,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "gstType": "CGST + SGST",
+        "igst": 12,
+        "name": "GST 12%",
+        "placeState": "Uttar Pradesh",
+        "rate": 12,
+        "sgst": 6,
+        "status": "Active",
+        "taxTreatment": "Intra-State",
+        "transactionPurchase": true,
+        "transactionSales": true,
+        "type": "GST"
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb6d",
+        "id": "TAX-GST-5",
+        "cess": 0,
+        "cgst": 2.5,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "gstType": "CGST + SGST",
+        "igst": 5,
+        "name": "GST 5%",
+        "placeState": "Uttar Pradesh",
+        "rate": 5,
+        "sgst": 2.5,
+        "status": "Active",
+        "taxTreatment": "Intra-State",
+        "transactionPurchase": true,
+        "transactionSales": true,
+        "type": "GST"
+      },
+      {
+        "_id": "6ad878cd0734cf40f21cbb6e",
+        "id": "TAX-GST-0",
+        "cess": 0,
+        "cgst": 0,
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "gstType": "Exempt",
+        "igst": 0,
+        "name": "GST 0% (Exempt)",
+        "placeState": "Uttar Pradesh",
+        "rate": 0,
+        "sgst": 0,
+        "status": "Active",
+        "taxTreatment": "Intra-State",
+        "transactionPurchase": true,
+        "transactionSales": true,
+        "type": "GST"
+      }
+    ],
+    "Designation": [
+      {
+        "_id": "6ad8782a9142f3878100c654",
+        "desigCode": "DES-PSE",
+        "desigName": "Pharma Sales Executive",
+        "desigType": "Executive",
+        "department": "Sales & Marketing",
+        "status": "Active",
+        "jobTitle": "Pharma Sales Executive",
+        "employmentType": "Permanent",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T08:33:17.433Z"
+      },
+      {
+        "_id": "6ad8782a9142f3878100c655",
+        "desigCode": "DES-ACCT",
+        "desigName": "Accountant",
+        "desigType": "Executive",
+        "department": "Accounts & Finance",
+        "status": "Active",
+        "jobTitle": "Accountant",
+        "employmentType": "Permanent",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T08:33:17.433Z"
+      },
+      {
+        "_id": "6ad8782a9142f3878100c656",
+        "desigCode": "DES-SDE",
+        "desigName": "Store & Dispatch Executive",
+        "desigType": "Executive",
+        "department": "Warehouse & Logistics",
+        "status": "Active",
+        "jobTitle": "Store & Dispatch Executive",
+        "employmentType": "Permanent",
+        "company": "6ad86e7477a82df88303aa7f",
+        "createdAt": "2026-04-01T09:00:00.000Z",
+        "updatedAt": "2026-10-21T08:33:17.433Z"
+      }
+    ]
+  }
+}
