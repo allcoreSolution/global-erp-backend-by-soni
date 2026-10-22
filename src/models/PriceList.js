@@ -30,6 +30,8 @@ const priceListSchema = new mongoose.Schema({
   company: { type: String, default: '' }
 }, { timestamps: true });
 
+priceListSchema.index({ company: 1, id: 1 });
+
 const PriceList = mongoose.model('PriceList', priceListSchema);
 
 module.exports = { PriceList };

@@ -11,6 +11,7 @@ mongoose.connect(process.env.MONGO_URI)
       
       console.log('Dropping stale index for PriceLists...');
       await mongoose.connection.collection('pricelists').dropIndex('priceListCode_1').catch(e => console.log('Index priceListCode_1 not found or already dropped'));
+      await mongoose.connection.collection('pricelists').dropIndex('id_1').catch(e => console.log('Index id_1 not found or already dropped'));
       
       console.log('Dropping stale index for HsnMappings...');
       await mongoose.connection.collection('hsnmappings').dropIndex('mappingId_1').catch(e => console.log('Index mappingId_1 not found or already dropped'));
