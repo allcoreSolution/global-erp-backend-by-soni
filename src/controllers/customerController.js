@@ -211,16 +211,69 @@ const getCustomerLedgerDetails = async (req, res, next) => {
       console.warn('Receipt fetch skipped:', err.message);
     }
 
-    // Returns for this customer
+    // Returns & Credit Notes for this customer
     let returns = [];
+    const invoiceNos = sales.map(s => s.invoiceNo).filter(Boolean);
     try {
       const { SaleReturn } = require('../models/SaleReturn');
-      returns = await SaleReturn.find({ customer: id })
-        .sort({ returnDate: -1, createdAt: -1 })
+      const returnOr = [{ customer: id }];
+      if (customer.name) returnOr.push({ customer: customer.name });
+      if (customer.businessName) returnOr.push({ customer: customer.businessName });
+      if (customer.phone) returnOr.push({ customerMobile: customer.phone });
+      if (invoiceNos.length > 0) {
+        returnOr.push({ invoiceNo: { $in: invoiceNos } });
+        returnOr.push({ invoiceNumber: { $in: invoiceNos } });
+      }
+
+      const rawReturns = await SaleReturn.find({ $or: returnOr })
+        .sort({ date: -1, returnDate: -1, createdAt: -1 })
         .lean();
+
+      returns = rawReturns.map(r => ({
+        ...r,
+        returnNumber: r.returnNumber || r.returnNo || 'SR',
+        returnDate: r.returnDate || r.date || (r.createdAt ? new Date(r.createdAt).toISOString().slice(0, 10) : '—'),
+        invoiceNumber: r.invoiceNumber || r.invoiceNo || '—',
+        totalRefundAmount: Number(r.totalRefundAmount || r.totalAmount || r.summary?.grandTotal) || 0,
+        reason: r.reason || 'Sales Return',
+        status: r.status || 'Approved'
+      }));
     } catch (err) {
       console.warn('SaleReturn fetch skipped:', err.message);
     }
+
+    // Also fetch Credit Notes if present
+    let creditNotes = [];
+    try {
+      const { CreditNote } = require('../models/CreditNote');
+      const cnOr = [{ customer: id }];
+      if (customer.name) cnOr.push({ customer: customer.name });
+      if (customer.businessName) cnOr.push({ customer: customer.businessName });
+      if (invoiceNos.length > 0) {
+        cnOr.push({ originalInvoiceNo: { $in: invoiceNos } });
+        cnOr.push({ invoiceNo: { $in: invoiceNos } });
+      }
+      creditNotes = await CreditNote.find({ $or: cnOr }).lean();
+    } catch (err) {
+      console.warn('CreditNote fetch skipped:', err.message);
+    }
+
+    // Map returns and credit notes by invoice
+    const returnByInvoice = {};
+    returns.forEach(r => {
+      const inv = r.invoiceNumber;
+      if (inv && inv !== '—') {
+        returnByInvoice[inv] = (returnByInvoice[inv] || 0) + (Number(r.totalRefundAmount) || 0);
+      }
+    });
+
+    creditNotes.forEach(cn => {
+      const inv = cn.originalInvoiceNo || cn.invoiceNo;
+      const amt = Number(cn.summary?.grandTotal || cn.amount) || 0;
+      if (inv && !returnByInvoice[inv]) {
+        returnByInvoice[inv] = (returnByInvoice[inv] || 0) + amt;
+      }
+    });
 
     let totalSold = 0;
     let totalPaidFromSales = 0;
@@ -228,31 +281,38 @@ const getCustomerLedgerDetails = async (req, res, next) => {
     let pendingInvoicesCount = 0;
     let cancelledInvoicesCount = 0;
 
-    sales.forEach(s => {
+    const enrichedSales = sales.map(s => {
       const grandTotal = Number(s.grandTotal) || 0;
       const amountPaid = Number(s.amountPaid) || 0;
+      const returnedAmount = returnByInvoice[s.invoiceNo] || 0;
+      const balanceDue = Math.max(0, grandTotal - amountPaid - returnedAmount);
+
       totalSold += grandTotal;
       totalPaidFromSales += amountPaid;
 
       if (s.saleStatus?.toLowerCase() === 'cancelled') {
         cancelledInvoicesCount++;
-      } else if (s.paymentStatus?.toLowerCase() === 'paid') {
+      } else if (balanceDue === 0 || s.paymentStatus?.toLowerCase() === 'paid') {
         paidInvoicesCount++;
       } else {
         pendingInvoicesCount++;
       }
+
+      return {
+        ...s,
+        returnedAmount,
+        balanceDue
+      };
     });
 
-    const totalReceiptsRecord = receipts.reduce((sum, r) => sum + (Number(r.paymentAmount || r.totals?.received) || 0), 0);
-    const totalReturnsValue = returns.reduce((sum, ret) => sum + (Number(ret.totalRefundAmount) || 0), 0);
+    const totalReturnsValue = returns.reduce((sum, ret) => sum + (Number(ret.totalRefundAmount) || 0), 0) ||
+      creditNotes.reduce((sum, cn) => sum + (Number(cn.summary?.grandTotal || cn.amount) || 0), 0);
 
     const openingBal = (customer.balanceType?.includes('Dr') || customer.balanceType === 'Dr (Receivable)')
       ? (Number(customer.openingBalance) || 0)
       : -(Number(customer.openingBalance) || 0);
 
-    const netBalance = (customer.balance !== undefined && customer.balance !== null && customer.balance !== 0)
-      ? customer.balance
-      : Math.max(0, totalSold - totalPaidFromSales - totalReturnsValue + openingBal);
+    const netBalance = Math.max(0, totalSold - totalPaidFromSales - totalReturnsValue + openingBal);
 
     res.json({
       success: true,
@@ -261,12 +321,13 @@ const getCustomerLedgerDetails = async (req, res, next) => {
           ...customer,
           companyName: customer.businessName || customer.name
         },
-        sales,
+        sales: enrichedSales,
         receipts,
         returns,
+        creditNotes,
         summary: {
           totalSold,
-          totalPaid: totalPaidFromSales + totalReceiptsRecord,
+          totalPaid: totalPaidFromSales,
           totalReturns: totalReturnsValue,
           netBalance,
           totalInvoices: sales.length,
