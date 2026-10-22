@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const courierSchema = new mongoose.Schema({
   // Basic Information
-  courierCode: { type: String, required: true, unique: true },
+  courierCode: { type: String, required: true, trim: true },
   name: { type: String, required: true },
   type: { type: String },
   company: { type: String, default: '' },
@@ -40,6 +40,8 @@ const courierSchema = new mongoose.Schema({
   // Additional Information
   isDefaultCourier: { type: Boolean, default: false }
 }, { timestamps: true });
+
+courierSchema.index({ company: 1, courierCode: 1 });
 
 const Courier = mongoose.model('Courier', courierSchema);
 
