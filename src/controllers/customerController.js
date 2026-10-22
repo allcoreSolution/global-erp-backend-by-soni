@@ -217,11 +217,7 @@ const getCustomerLedgerDetails = async (req, res, next) => {
     try {
       const { SaleReturn } = require('../models/SaleReturn');
       const returnOr = [{ customer: id }];
-      if (customer.name) returnOr.push({ customer: customer.name });
-      if (customer.businessName) returnOr.push({ customer: customer.businessName });
-      if (customer.phone) returnOr.push({ customerMobile: customer.phone });
       if (invoiceNos.length > 0) {
-        returnOr.push({ invoiceNo: { $in: invoiceNos } });
         returnOr.push({ invoiceNumber: { $in: invoiceNos } });
       }
 

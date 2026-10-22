@@ -210,19 +210,71 @@ const getSupplierLedgerDetails = async (req, res, next) => {
       console.warn('Payment fetch skipped:', err.message);
     }
 
+    // Invoices reference list
+    const invoiceNos = purchases.map(p => p.referenceNo || p.purchaseNo).filter(Boolean);
+
     // Returns for this supplier
     let returns = [];
     try {
       const { PurchaseReturn } = require('../models/PurchaseReturn');
-      returns = await PurchaseReturn.find({
-        $or: [
-          { supplier: id },
-          { supplier: supplier.companyName }
-        ]
-      }).sort({ returnDate: -1 }).lean();
+      const returnOr = [{ supplier: id }];
+      if (supplier.companyName) returnOr.push({ supplier: supplier.companyName });
+      if (supplier.supplierCode) returnOr.push({ supplier: supplier.supplierCode });
+      if (invoiceNos.length > 0) {
+        returnOr.push({ referenceNo: { $in: invoiceNos } });
+        returnOr.push({ purchaseNo: { $in: invoiceNos } });
+      }
+
+      const rawReturns = await PurchaseReturn.find({ $or: returnOr })
+        .sort({ returnDate: -1, date: -1, createdAt: -1 })
+        .lean();
+
+      returns = rawReturns.map(r => ({
+        ...r,
+        returnNumber: r.returnNumber || r.returnNo || 'PR',
+        returnNo: r.returnNo || r.returnNumber || 'PR',
+        returnDate: r.returnDate || r.date || (r.createdAt ? new Date(r.createdAt).toISOString().slice(0, 10) : '—'),
+        referenceNo: r.referenceNo || r.purchaseNo || '—',
+        totalRefundAmount: Number(r.grandTotal || r.totalRefundAmount || r.totalAmount || r.totals?.netAmount || r.totals?.goodsValue) || 0,
+        reason: r.reason || r.returnReason || 'Purchase Return',
+        status: r.status || 'Approved'
+      }));
     } catch (err) {
       console.warn('PurchaseReturn fetch skipped:', err.message);
     }
+
+    // Also fetch Debit Notes
+    let debitNotes = [];
+    try {
+      const { DebitNote } = require('../models/DebitNote');
+      const dnOr = [{ supplier: id }];
+      if (supplier.companyName) dnOr.push({ supplier: supplier.companyName });
+      if (supplier.supplierCode) dnOr.push({ supplier: supplier.supplierCode });
+      if (invoiceNos.length > 0) {
+        dnOr.push({ originalInvoiceNo: { $in: invoiceNos } });
+        dnOr.push({ invoiceNo: { $in: invoiceNos } });
+      }
+      debitNotes = await DebitNote.find({ $or: dnOr }).lean();
+    } catch (err) {
+      console.warn('DebitNote fetch skipped:', err.message);
+    }
+
+    // Map returns and debit notes by invoice
+    const returnByInvoice = {};
+    returns.forEach(r => {
+      const inv = r.referenceNo;
+      if (inv && inv !== '—') {
+        returnByInvoice[inv] = (returnByInvoice[inv] || 0) + (Number(r.totalRefundAmount) || 0);
+      }
+    });
+
+    debitNotes.forEach(dn => {
+      const inv = dn.originalInvoiceNo || dn.invoiceNo;
+      const amt = Number(dn.summary?.grandTotal || dn.amount || dn.totalAmount) || 0;
+      if (inv && !returnByInvoice[inv]) {
+        returnByInvoice[inv] = (returnByInvoice[inv] || 0) + amt;
+      }
+    });
 
     let totalPurchased = 0;
     let totalPaidFromPurchases = 0;
@@ -230,38 +282,47 @@ const getSupplierLedgerDetails = async (req, res, next) => {
     let pendingInvoicesCount = 0;
     let cancelledInvoicesCount = 0;
 
-    purchases.forEach(p => {
+    const enrichedPurchases = purchases.map(p => {
       const grandTotal = Number(p.grandTotal) || 0;
       const amountPaid = Number(p.amountPaid) || 0;
+      const invRef = p.referenceNo || p.purchaseNo;
+      const returnedAmount = returnByInvoice[invRef] || returnByInvoice[p.purchaseNo] || 0;
+      const balanceDue = Math.max(0, grandTotal - amountPaid - returnedAmount);
+
       totalPurchased += grandTotal;
       totalPaidFromPurchases += amountPaid;
 
       if (p.purchaseStatus?.toLowerCase() === 'cancelled') {
         cancelledInvoicesCount++;
-      } else if (p.paymentStatus?.toLowerCase() === 'paid') {
+      } else if (balanceDue === 0 || p.paymentStatus?.toLowerCase() === 'paid') {
         paidInvoicesCount++;
       } else {
         pendingInvoicesCount++;
       }
+
+      return {
+        ...p,
+        returnedAmount,
+        balanceDue
+      };
     });
 
-    const totalPaymentsRecord = payments.reduce((sum, pay) => sum + (Number(pay.paymentAmount) || 0), 0);
-    const totalReturnsValue = returns.reduce((sum, ret) => sum + (Number(ret.totals?.netAmount || ret.totals?.goodsValue) || 0), 0);
+    const totalReturnsValue = returns.reduce((sum, ret) => sum + (Number(ret.totalRefundAmount) || 0), 0) ||
+      debitNotes.reduce((sum, dn) => sum + (Number(dn.summary?.grandTotal || dn.amount) || 0), 0);
 
-    const netBalance = (supplier.balance !== undefined && supplier.balance !== null && supplier.balance !== 0)
-      ? supplier.balance
-      : Math.max(0, totalPurchased - totalPaidFromPurchases - totalReturnsValue);
+    const netBalance = Math.max(0, totalPurchased - totalPaidFromPurchases - totalReturnsValue);
 
     res.json({
       success: true,
       data: {
         supplier,
-        purchases,
+        purchases: enrichedPurchases,
         payments,
         returns,
+        debitNotes,
         summary: {
           totalPurchased,
-          totalPaid: totalPaidFromPurchases + totalPaymentsRecord,
+          totalPaid: totalPaidFromPurchases,
           totalReturns: totalReturnsValue,
           netBalance,
           totalInvoices: purchases.length,
