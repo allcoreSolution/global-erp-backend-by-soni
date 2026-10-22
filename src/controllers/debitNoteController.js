@@ -1,52 +1,215 @@
+const mongoose = require('mongoose');
 const { DebitNote } = require('../models/DebitNote');
 const { Supplier } = require('../models/Supplier');
 const { Product } = require('../models/Product');
 const { Journal } = require('../models/Journal');
+const { Branch } = require('../models/Branch');
+const { Warehouse } = require('../models/Warehouse');
+const { Purchase } = require('../models/Purchase');
 
-// Helper to check stock availability before deducting
-const checkProductStock = async (items, warehouse) => {
-  for (let item of items) {
-    if (!item.product || !item.qty) continue;
-    const product = await Product.findOne({ productName: item.product });
-    if (!product) throw new Error(`Product not found: ${item.product}`);
-    
-    if ((product.currentStock || 0) < item.qty) {
-      throw new Error(`Insufficient stock for ${item.product}. Available: ${product.currentStock || 0}, Requested: ${item.qty}`);
+// Helper to resolve warehouse names/IDs from branch, original purchase invoice, or warehouse input
+const getTargetWarehouseNames = async (branchOrWarehouse, companyId, originalInvoiceNo) => {
+  const targetNames = new Set();
+  
+  if (branchOrWarehouse) {
+    targetNames.add(String(branchOrWarehouse).trim());
+  }
+
+  // 1. If originalInvoiceNo exists, check the Purchase document's warehouse & branch
+  if (originalInvoiceNo) {
+    const purchaseQuery = { purchaseNo: originalInvoiceNo };
+    if (companyId) purchaseQuery.company = companyId;
+    const purchaseDoc = await Purchase.findOne(purchaseQuery).catch(() => null);
+    if (purchaseDoc) {
+      if (purchaseDoc.warehouse) {
+        targetNames.add(String(purchaseDoc.warehouse).trim());
+        if (mongoose.isValidObjectId(purchaseDoc.warehouse)) {
+          const wh = await Warehouse.findById(purchaseDoc.warehouse).catch(() => null);
+          if (wh?.name) targetNames.add(wh.name.trim());
+        }
+      }
+      if (purchaseDoc.branch) {
+        targetNames.add(String(purchaseDoc.branch).trim());
+        if (mongoose.isValidObjectId(purchaseDoc.branch)) {
+          const br = await Branch.findById(purchaseDoc.branch).catch(() => null);
+          if (br?.name) targetNames.add(br.name.trim());
+        }
+      }
+    }
+  }
+
+  // 2. If branchOrWarehouse is provided, resolve Branch -> Warehouses
+  if (branchOrWarehouse) {
+    const branchQuery = {
+      $or: [
+        { name: branchOrWarehouse },
+        ...(mongoose.isValidObjectId(branchOrWarehouse) ? [{ _id: branchOrWarehouse }] : [])
+      ]
+    };
+    if (companyId) branchQuery.company = companyId;
+    const branchDoc = await Branch.findOne(branchQuery).catch(() => null);
+    if (branchDoc) {
+      targetNames.add(branchDoc.name.trim());
+      targetNames.add(branchDoc._id.toString());
+      const linkedWarehouses = await Warehouse.find({ branch: branchDoc._id }).catch(() => []);
+      linkedWarehouses.forEach(w => {
+        targetNames.add(w.name.trim());
+        targetNames.add(w._id.toString());
+      });
     }
 
-    if (warehouse) {
-      const wStock = product.warehouseStocks.find(w => w.warehouse === warehouse);
-      const availableWStock = wStock ? (wStock.stock || 0) : 0;
-      if (availableWStock < item.qty) {
-        throw new Error(`Insufficient stock for ${item.product} in branch ${warehouse}. Available: ${availableWStock}, Requested: ${item.qty}`);
+    // Also check if branchOrWarehouse is already a Warehouse name or ID
+    const whQuery = {
+      $or: [
+        { name: branchOrWarehouse },
+        ...(mongoose.isValidObjectId(branchOrWarehouse) ? [{ _id: branchOrWarehouse }] : [])
+      ]
+    };
+    if (companyId) whQuery.company = companyId;
+    const whDoc = await Warehouse.findOne(whQuery).catch(() => null);
+    if (whDoc) {
+      targetNames.add(whDoc.name.trim());
+      targetNames.add(whDoc._id.toString());
+    }
+  }
+
+  return Array.from(targetNames);
+};
+
+// Helper to check stock availability before deducting
+const checkProductStock = async (items, branchOrWarehouse, companyId, originalInvoiceNo) => {
+  const targetWarehouseNames = await getTargetWarehouseNames(branchOrWarehouse, companyId, originalInvoiceNo);
+
+  for (let item of items) {
+    if (!item.product || !item.qty) continue;
+    const requestedQty = Number(item.qty) || 0;
+    if (requestedQty <= 0) continue;
+
+    // Search product with company scope first, fallback to global
+    let product = null;
+    if (companyId) {
+      product = await Product.findOne({
+        company: companyId,
+        $or: [
+          { productName: item.product },
+          { productCode: item.product },
+          ...(mongoose.isValidObjectId(item.product) ? [{ _id: item.product }] : [])
+        ]
+      });
+    }
+    if (!product) {
+      product = await Product.findOne({
+        $or: [
+          { productName: item.product },
+          { productCode: item.product },
+          ...(mongoose.isValidObjectId(item.product) ? [{ _id: item.product }] : [])
+        ]
+      });
+    }
+
+    if (!product) continue;
+
+    const currentTotalStock = Number(product.currentStock) || 0;
+
+    // Check overall stock
+    if (!product.negativeStockAllowed && currentTotalStock < requestedQty) {
+      throw new Error(`Insufficient stock for ${item.product}. Available: ${currentTotalStock}, Requested: ${requestedQty}`);
+    }
+
+    // Check warehouse-specific stock only if warehouseStocks exist and matches target warehouse/branch
+    if (targetWarehouseNames.length > 0 && Array.isArray(product.warehouseStocks) && product.warehouseStocks.length > 0) {
+      const matchedStocks = product.warehouseStocks.filter(w => 
+        targetWarehouseNames.some(target => 
+          String(w.warehouse).trim().toLowerCase() === target.trim().toLowerCase()
+        )
+      );
+
+      if (matchedStocks.length > 0) {
+        const availableWStock = matchedStocks.reduce((sum, ws) => sum + (Number(ws.stock) || 0), 0);
+        if (!product.negativeStockAllowed && availableWStock < requestedQty) {
+          throw new Error(`Insufficient stock for ${item.product} in branch/warehouse ${branchOrWarehouse}. Available: ${availableWStock}, Requested: ${requestedQty}`);
+        }
       }
     }
   }
 };
 
 // Helper to update supplier balance
-const updateSupplierBalance = async (supplierName, amountChange) => {
-  if (!supplierName) return;
-  const supplier = await Supplier.findOne({ companyName: supplierName });
+const updateSupplierBalance = async (supplierNameOrId, amountChange, companyId) => {
+  if (!supplierNameOrId || !amountChange) return;
+
+  const query = {
+    $or: [
+      { companyName: supplierNameOrId },
+      ...(mongoose.isValidObjectId(supplierNameOrId) ? [{ _id: supplierNameOrId }] : [])
+    ]
+  };
+  if (companyId) query.company = companyId;
+
+  let supplier = await Supplier.findOne(query);
+  if (!supplier) {
+    supplier = await Supplier.findOne({
+      $or: [
+        { companyName: supplierNameOrId },
+        ...(mongoose.isValidObjectId(supplierNameOrId) ? [{ _id: supplierNameOrId }] : [])
+      ]
+    });
+  }
+
   if (supplier) {
-    supplier.balance = (supplier.balance || 0) + amountChange;
+    supplier.balance = (Number(supplier.balance) || 0) + Number(amountChange);
     await supplier.save();
   }
 };
 
 // Helper to update product stock
-const updateProductStock = async (productName, qtyChange, warehouse) => {
-  if (!productName || !qtyChange) return;
-  const product = await Product.findOne({ productName });
+const updateProductStock = async (productIdentifier, qtyChange, branchOrWarehouse, companyId, originalInvoiceNo) => {
+  if (!productIdentifier || !qtyChange) return;
+
+  const targetWarehouseNames = await getTargetWarehouseNames(branchOrWarehouse, companyId, originalInvoiceNo);
+
+  let product = null;
+  if (companyId) {
+    product = await Product.findOne({
+      company: companyId,
+      $or: [
+        { productName: productIdentifier },
+        { productCode: productIdentifier },
+        ...(mongoose.isValidObjectId(productIdentifier) ? [{ _id: productIdentifier }] : [])
+      ]
+    });
+  }
+  if (!product) {
+    product = await Product.findOne({
+      $or: [
+        { productName: productIdentifier },
+        { productCode: productIdentifier },
+        ...(mongoose.isValidObjectId(productIdentifier) ? [{ _id: productIdentifier }] : [])
+      ]
+    });
+  }
+
   if (product) {
-    product.currentStock = (product.currentStock || 0) + qtyChange;
-    
-    if (warehouse) {
-      const wIndex = product.warehouseStocks.findIndex(w => w.warehouse === warehouse);
+    // 1. Update overall stock
+    product.currentStock = (Number(product.currentStock) || 0) + Number(qtyChange);
+
+    // 2. Update warehouse-specific stock
+    if (!Array.isArray(product.warehouseStocks)) {
+      product.warehouseStocks = [];
+    }
+
+    if (targetWarehouseNames.length > 0) {
+      const wIndex = product.warehouseStocks.findIndex(w => 
+        targetWarehouseNames.some(target => 
+          String(w.warehouse).trim().toLowerCase() === target.trim().toLowerCase()
+        )
+      );
+
       if (wIndex >= 0) {
-        product.warehouseStocks[wIndex].stock = (product.warehouseStocks[wIndex].stock || 0) + qtyChange;
+        product.warehouseStocks[wIndex].stock = (Number(product.warehouseStocks[wIndex].stock) || 0) + Number(qtyChange);
       } else {
-        product.warehouseStocks.push({ warehouse, stock: qtyChange });
+        const preferredWh = targetWarehouseNames[0] || branchOrWarehouse;
+        product.warehouseStocks.push({ warehouse: preferredWh, stock: Number(qtyChange) });
       }
     }
     await product.save();
@@ -58,25 +221,37 @@ const updateProductStock = async (productName, qtyChange, warehouse) => {
 // @access  Private
 const createDebitNote = async (req, res, next) => {
   try {
+    const companyId = req.user?.companyId || req.user?.company || req.body.company || null;
+
     // 0. Stock Validation BEFORE creating
     if (req.body.items && req.body.items.length > 0) {
-      await checkProductStock(req.body.items, req.body.branch);
+      await checkProductStock(req.body.items, req.body.branch, companyId, req.body.originalInvoiceNo);
+    }
+
+    // Auto-generate or deduplicate debitNoteNo
+    let debitNoteNo = req.body.debitNoteNo || `DN-${Math.floor(Math.random() * 90000) + 10000}`;
+    const existing = await DebitNote.findOne({ debitNoteNo });
+    if (existing) {
+      debitNoteNo = `DN-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 900) + 100}`;
     }
 
     const newDebitNote = await DebitNote.create({
       ...req.body,
-      company: req.user?.companyId || req.body.company
+      debitNoteNo,
+      voucherNo: req.body.voucherNo || debitNoteNo,
+      noteNo: req.body.noteNo || debitNoteNo,
+      company: companyId
     });
 
     const grandTotal = newDebitNote.summary?.grandTotal || 0;
 
     // 1. Decrease Supplier Balance
-    await updateSupplierBalance(newDebitNote.supplier, -grandTotal);
+    await updateSupplierBalance(newDebitNote.supplier, -grandTotal, companyId);
 
     // 2. Decrease Stock
     if (newDebitNote.items && newDebitNote.items.length > 0) {
       for (let item of newDebitNote.items) {
-        await updateProductStock(item.product, -item.qty, newDebitNote.branch);
+        await updateProductStock(item.product, -item.qty, newDebitNote.branch, companyId, newDebitNote.originalInvoiceNo);
       }
     }
 
@@ -124,8 +299,9 @@ const createDebitNote = async (req, res, next) => {
 // @access  Private
 const getDebitNotes = async (req, res, next) => {
   try {
-    const query = req.user?.companyId ? { company: req.user.companyId } : {};
-    const debitNotes = await DebitNote.find(query);
+    const companyId = req.user?.companyId || req.user?.company;
+    const query = companyId ? { company: companyId } : {};
+    const debitNotes = await DebitNote.find(query).sort({ createdAt: -1 });
     res.json({ success: true, data: debitNotes });
   } catch (error) {
     next(error);
@@ -153,35 +329,34 @@ const getDebitNoteById = async (req, res, next) => {
 // @access  Private
 const updateDebitNote = async (req, res, next) => {
   try {
+    const companyId = req.user?.companyId || req.body.company || null;
     const oldNote = await DebitNote.findById(req.params.id);
     if (!oldNote) {
       res.status(404);
       return next(new Error('Debit Note not found'));
     }
 
-    // 0. Stock Validation (We need to check if the new qty is available, considering we will return the old qty first)
-    // For simplicity, we can do a naive check if the required additional stock is there.
-    // If the new stock is more than old stock, check the difference.
-    
+    const oldCompanyId = oldNote.company || companyId;
+
     // Reverse Old Note Effects
     const oldGrandTotal = oldNote.summary?.grandTotal || 0;
-    await updateSupplierBalance(oldNote.supplier, oldGrandTotal);
+    await updateSupplierBalance(oldNote.supplier, oldGrandTotal, oldCompanyId);
     if (oldNote.items && oldNote.items.length > 0) {
       for (let item of oldNote.items) {
-        await updateProductStock(item.product, item.qty, oldNote.branch);
+        await updateProductStock(item.product, item.qty, oldNote.branch, oldCompanyId, oldNote.originalInvoiceNo);
       }
     }
 
     // After reversing, check stock for the new payload
     if (req.body.items && req.body.items.length > 0) {
       try {
-        await checkProductStock(req.body.items, req.body.branch);
+        await checkProductStock(req.body.items, req.body.branch, companyId, req.body.originalInvoiceNo);
       } catch (err) {
         // Re-apply old note effects if stock validation fails!
-        await updateSupplierBalance(oldNote.supplier, -oldGrandTotal);
+        await updateSupplierBalance(oldNote.supplier, -oldGrandTotal, oldCompanyId);
         if (oldNote.items && oldNote.items.length > 0) {
           for (let item of oldNote.items) {
-            await updateProductStock(item.product, -item.qty, oldNote.branch);
+            await updateProductStock(item.product, -item.qty, oldNote.branch, oldCompanyId, oldNote.originalInvoiceNo);
           }
         }
         return res.status(400).json({ success: false, message: err.message });
@@ -195,10 +370,10 @@ const updateDebitNote = async (req, res, next) => {
 
     // Apply New Note Effects
     const newGrandTotal = newNote.summary?.grandTotal || 0;
-    await updateSupplierBalance(newNote.supplier, -newGrandTotal);
+    await updateSupplierBalance(newNote.supplier, -newGrandTotal, companyId);
     if (newNote.items && newNote.items.length > 0) {
       for (let item of newNote.items) {
-        await updateProductStock(item.product, -item.qty, newNote.branch);
+        await updateProductStock(item.product, -item.qty, newNote.branch, companyId, newNote.originalInvoiceNo);
       }
     }
 
@@ -250,12 +425,14 @@ const deleteDebitNote = async (req, res, next) => {
       return next(new Error('Debit Note not found'));
     }
 
+    const companyId = oldNote.company || req.user?.companyId;
+
     // Reverse Old Note Effects
     const oldGrandTotal = oldNote.summary?.grandTotal || 0;
-    await updateSupplierBalance(oldNote.supplier, oldGrandTotal);
+    await updateSupplierBalance(oldNote.supplier, oldGrandTotal, companyId);
     if (oldNote.items && oldNote.items.length > 0) {
       for (let item of oldNote.items) {
-        await updateProductStock(item.product, item.qty, oldNote.branch);
+        await updateProductStock(item.product, item.qty, oldNote.branch, companyId, oldNote.originalInvoiceNo);
       }
     }
 
@@ -267,14 +444,6 @@ const deleteDebitNote = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
-
-module.exports = {
-  createDebitNote,
-  getDebitNotes,
-  getDebitNoteById,
-  updateDebitNote,
-  deleteDebitNote
 };
 
 // @desc    Import Debit Notes
@@ -294,12 +463,10 @@ const importDebitNotes = async (req, res, next) => {
       company: companyId || n.company
     }));
 
-    // Use insertMany, but ignore duplicate key errors for ordered: false
     const imported = await DebitNote.insertMany(notesWithCompany, { ordered: false });
     res.status(201).json({ success: true, count: imported.length, data: imported });
   } catch (error) {
     if (error.code === 11000) {
-      // Partial success if some failed due to duplicate keys
       return res.status(207).json({ success: true, message: 'Imported with some duplicate errors', count: error.insertedDocs?.length || 0 });
     }
     next(error);

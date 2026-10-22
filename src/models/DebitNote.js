@@ -4,7 +4,9 @@ const debitNoteItemSchema = new mongoose.Schema({
   product: { type: String, required: true },
   qty: { type: Number, required: true, default: 0 },
   rate: { type: Number, required: true, default: 0 },
-  amount: { type: Number, required: true, default: 0 }
+  amount: { type: Number, required: true, default: 0 },
+  batch: { type: String, default: '' },
+  unit: { type: String, default: '' }
 });
 
 const debitNoteSchema = new mongoose.Schema({
@@ -15,6 +17,7 @@ const debitNoteSchema = new mongoose.Schema({
   date: { type: String, required: true },
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' },
   branch: { type: String, default: '' },
+  warehouse: { type: String, default: '' },
   type: { type: String, default: 'Purchase Return' },
   status: { type: String, default: 'Draft' },
   
