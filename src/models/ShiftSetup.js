@@ -12,8 +12,8 @@ const shiftSetupSchema = new mongoose.Schema({
   company: { type: String, default: '' }, // acts as the tenant isolation key
 
   // Basic Info
-  shiftCode: { type: String, required: true, unique: true },
-  shiftName: { type: String, required: true },
+  shiftCode: { type: String, required: true },
+  shiftName: { type: String, required: true, trim: true },
   shiftType: { type: String, default: 'Fixed' },
   branch: { type: String, default: '' },
   department: { type: String, default: '' },
@@ -60,6 +60,8 @@ const shiftSetupSchema = new mongoose.Schema({
   // Night Shift
   nightShift: { type: String, default: 'No' }
 }, { timestamps: true });
+
+shiftSetupSchema.index({ company: 1, shiftCode: 1 }, { unique: true, sparse: true });
 
 const ShiftSetup = mongoose.model('ShiftSetup', shiftSetupSchema);
 
