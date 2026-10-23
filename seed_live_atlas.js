@@ -53,19 +53,17 @@ async function seedLiveAtlas() {
 
     // Ensure superadmin@gmail.com user exists and has password Super123
     let superAdminUser = await User.findOne({ email: 'superadmin@gmail.com' });
-    const superSalt = await bcrypt.genSalt(10);
-    const superHashedPassword = await bcrypt.hash('Super123', superSalt);
     if (!superAdminUser) {
       superAdminUser = await User.create({
         username: 'superadmin',
         email: 'superadmin@gmail.com',
-        password: superHashedPassword,
+        password: 'Super123',
         role: superAdminRole._id,
         isActive: true
       });
       console.log('Created Super Admin User: superadmin@gmail.com / Super123');
     } else {
-      superAdminUser.password = superHashedPassword;
+      superAdminUser.password = 'Super123';
       superAdminUser.role = superAdminRole._id;
       superAdminUser.isActive = true;
       await superAdminUser.save();
@@ -142,16 +140,13 @@ async function seedLiveAtlas() {
     // ----------------------------------------------------
     // 3. Company Admin User for Apex Pharma
     // ----------------------------------------------------
-    const adminSalt = await bcrypt.genSalt(10);
-    const adminHashedPassword = await bcrypt.hash('ApexAdmin@123', adminSalt);
-
     // Primary admin: admin@apexpharma.com
     let apexAdminUser = await User.findOne({ email: 'admin@apexpharma.com' });
     if (!apexAdminUser) {
       apexAdminUser = await User.create({
         username: 'apexadmin',
         email: 'admin@apexpharma.com',
-        password: adminHashedPassword,
+        password: 'ApexAdmin@123',
         role: adminRole._id,
         company: compId,
         phone: '+91 94150 12345',
@@ -159,7 +154,7 @@ async function seedLiveAtlas() {
       });
       console.log('Created Company Admin User: admin@apexpharma.com / ApexAdmin@123');
     } else {
-      apexAdminUser.password = adminHashedPassword;
+      apexAdminUser.password = 'ApexAdmin@123';
       apexAdminUser.role = adminRole._id;
       apexAdminUser.company = compId;
       apexAdminUser.isActive = true;
@@ -173,7 +168,7 @@ async function seedLiveAtlas() {
       if (!oa.username) {
         oa.username = (oa.email.split('@')[0] || 'apexuser').toLowerCase();
       }
-      oa.password = adminHashedPassword;
+      oa.password = 'ApexAdmin@123';
       oa.role = adminRole._id;
       oa.company = compId;
       oa.isActive = true;
