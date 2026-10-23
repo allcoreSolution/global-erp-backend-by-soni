@@ -191,13 +191,15 @@ const addPurchase = async (req, res, next) => {
     const finalGrandTotal = Number(req.body.grandTotal) || calculatedTotal;
 
     // Purchase number generate karo
-    const purchaseNo = req.body.referenceNo || `PUR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    const purchaseNo = req.body.purchaseNo || req.body.invoiceNo || req.body.referenceNo || `PUR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    const invoiceNo = req.body.invoiceNo || req.body.purchaseNo || purchaseNo;
 
     const createdPurchases = await Purchase.create([{
       ...req.body,
       orderItems: processedItems,
       purchaseNo: purchaseNo,
-      referenceNo: purchaseNo,
+      invoiceNo: invoiceNo,
+      referenceNo: req.body.referenceNo || purchaseNo,
       grandTotal: finalGrandTotal,
       company: companyId
     }]);

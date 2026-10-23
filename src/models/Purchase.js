@@ -24,6 +24,7 @@ const purchaseSchema = new mongoose.Schema({
   purchaseType: { type: String, enum: ['Trading Goods', 'Fixed Asset', 'Expense'], default: 'Trading Goods' },
   referenceNo: { type: String, default: '' },
   purchaseNo: { type: String, unique: true, sparse: true },
+  invoiceNo: { type: String, default: '' },
 
   // ✅ Fixed: Proper ObjectId references (Hierarchy: Company → Branch → Warehouse)
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },

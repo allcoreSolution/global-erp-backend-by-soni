@@ -295,7 +295,7 @@ const getDashboardSummary = async (req, res, next) => {
             $match: {
               ...tenantMatch,
               paymentType: {
-                $nin: ['Supplier', 'Fixed Asset', 'Security Deposit', 'Drawings', 'Employee Advance', 'Loan Repayment', 'Payroll']
+                $nin: ['Supplier', 'Fixed Asset', 'Security Deposit', 'Drawings', 'Employee Advance', 'Loan Repayment', 'Payroll', 'Contra']
               }
             }
           },
@@ -346,15 +346,16 @@ const getDashboardSummary = async (req, res, next) => {
       try {
         const loanPayment = await Payment.findOne({ ...tenantMatch, paymentType: 'Loan Repayment' });
         if (loanPayment) {
-          const interestVal = loanPayment.interestAmount || 2000;
-          totalExpensesYear += interestVal;
-          pieData.push({ name: 'Loan Interest', value: interestVal, color: '#f43f5e' });
+          const interestVal = loanPayment.interestAmount || 0;
+          if (interestVal > 0) {
+            totalExpensesYear += interestVal;
+            pieData.push({ name: 'Loan Interest', value: interestVal, color: '#f43f5e' });
+          }
         }
       } catch (_) {}
 
       // E. Depreciation Expense
       try {
-        let depAmt = 0;
         const depJournals = await Journal.aggregate([
           { $match: { ...tenantMatch } },
           { $unwind: "$entries" },
@@ -362,12 +363,10 @@ const getDashboardSummary = async (req, res, next) => {
           { $group: { _id: null, total: { $sum: "$entries.debit" } } }
         ]);
         if (depJournals.length > 0 && depJournals[0].total > 0) {
-          depAmt = depJournals[0].total;
-        } else {
-          depAmt = 1500; // Fixed test asset depreciation
+          const depAmt = depJournals[0].total;
+          totalExpensesYear += depAmt;
+          pieData.push({ name: 'Depreciation', value: depAmt, color: '#64748b' });
         }
-        totalExpensesYear += depAmt;
-        pieData.push({ name: 'Depreciation', value: depAmt, color: '#64748b' });
       } catch (_) {}
     }
 
@@ -393,13 +392,13 @@ const getDashboardSummary = async (req, res, next) => {
         // Supplier payables: Net purchase dues
         let rawCreditors = 0;
         try {
-          const Supplier = require('../models/Supplier');
+          const { Supplier } = require('../models/Supplier');
           const suppliers = await Supplier.find(tenantMatch);
           suppliers.forEach(s => {
             if (s.balance > 0) rawCreditors += s.balance;
           });
         } catch (_) {}
-        creditorsAmount = rawCreditors || 59920;
+        creditorsAmount = rawCreditors;
       }
 
       outstanding.debtors = parseFloat((debtorsAmount / 100000).toFixed(2));
@@ -440,13 +439,13 @@ const getDashboardSummary = async (req, res, next) => {
 
       summaryCards.grossProfit = {
         amount: formatCurrency(grossProfitNum),
-        percent: grossProfitNum >= 0 ? '+Gross' : '-Loss',
+        percent: grossProfitNum > 0 ? '+Gross' : grossProfitNum < 0 ? '-Loss' : '0%',
         up: grossProfitNum >= 0
       };
 
       summaryCards.netProfit = {
         amount: formatCurrency(netProfitNum),
-        percent: netProfitNum >= 0 ? '+Profit' : '-Loss',
+        percent: netProfitNum > 0 ? '+Profit' : netProfitNum < 0 ? '-Loss' : '0%',
         up: netProfitNum >= 0
       };
 
@@ -537,6 +536,7 @@ const getDashboardSummary = async (req, res, next) => {
     });
 
     tables.recentActivities = dynamicActivities.slice(0, 5);
+    tables.bankBalanceData = bankBalanceData;
 
     // ----------------------------------------------------
     // Response payload
@@ -681,11 +681,11 @@ const getSuperAdminDashboardSummary = async (req, res, next) => {
       const mName = monthNames[mIdx];
       const match = monthlySalesAgg.find(x => x._id.month === (mIdx + 1) && x._id.year === yr);
       const realVal = match ? match.totalSales : 0;
-      const val = realVal > 0 ? realVal : Math.max(25000, Math.round((5 - i + 2) * 45000 + (monthlyPlanRevenue || 12000)));
+      const val = realVal;
       last6Total += val;
 
       const clampedVal = Math.min(400000, Math.max(0, val));
-      const y = Math.round(185 - (clampedVal / 400000) * 160);
+      const y = val > 0 ? Math.round(185 - (clampedVal / 400000) * 160) : 185;
       const x = Math.round(startX + (5 - i) * stepX6);
 
       last6Points.push({
@@ -709,10 +709,10 @@ const getSuperAdminDashboardSummary = async (req, res, next) => {
       const mName = monthNames[mIdx];
       const match = monthlySalesAgg.find(x => x._id.month === (mIdx + 1) && x._id.year === yr);
       const realVal = match ? match.totalSales : 0;
-      const val = realVal > 0 ? realVal : Math.max(50000, Math.round((2 - i + 4) * 55000 + (monthlyPlanRevenue || 15000)));
+      const val = realVal;
       last3Total += val;
       const clampedVal = Math.min(400000, Math.max(0, val));
-      const y = Math.round(185 - (clampedVal / 400000) * 160);
+      const y = val > 0 ? Math.round(185 - (clampedVal / 400000) * 160) : 185;
       const x = Math.round(110 + (2 - i) * stepX3);
       last3Points.push({ month: mName, value: val, display: formatINR(val), x, y });
     }
@@ -720,14 +720,14 @@ const getSuperAdminDashboardSummary = async (req, res, next) => {
 
     // Build Last 30 Days Dataset
     const last30Points = [
-      { month: 'Week 1', value: Math.round(last6Total * 0.18) || 28000, x: 100, y: 155 },
-      { month: 'Week 2', value: Math.round(last6Total * 0.24) || 38000, x: 230, y: 130 },
-      { month: 'Week 3', value: Math.round(last6Total * 0.32) || 52000, x: 360, y: 95 },
-      { month: 'Week 4', value: Math.round(last6Total * 0.26) || 42000, x: 490, y: 110 }
+      { month: 'Week 1', value: Math.round(last6Total * 0.18), x: 100, y: 155 },
+      { month: 'Week 2', value: Math.round(last6Total * 0.24), x: 230, y: 130 },
+      { month: 'Week 3', value: Math.round(last6Total * 0.32), x: 360, y: 95 },
+      { month: 'Week 4', value: Math.round(last6Total * 0.26), x: 490, y: 110 }
     ].map(pt => ({
       ...pt,
       display: formatINR(pt.value),
-      y: Math.round(185 - (Math.min(400000, pt.value) / 400000) * 160)
+      y: pt.value > 0 ? Math.round(185 - (Math.min(400000, pt.value) / 400000) * 160) : 185
     }));
     const last30Total = last30Points.reduce((acc, p) => acc + p.value, 0);
     const paths30 = generateSvgPaths(last30Points);
@@ -738,9 +738,9 @@ const getSuperAdminDashboardSummary = async (req, res, next) => {
     const yearMonths = ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov'];
     const stepXYr = (endX - startX) / (yearMonths.length - 1);
     yearMonths.forEach((mName, idx) => {
-      const val = Math.round(55000 + idx * 48000 + (lifetimeSales > 0 ? (lifetimeSales / 6) : 0));
+      const val = lifetimeSales > 0 ? Math.round(lifetimeSales / 6) : 0;
       thisYearTotal += val;
-      const y = Math.round(185 - (Math.min(400000, val) / 400000) * 160);
+      const y = val > 0 ? Math.round(185 - (Math.min(400000, val) / 400000) * 160) : 185;
       const x = Math.round(startX + idx * stepXYr);
       thisYearPoints.push({ month: mName, value: val, display: formatINR(val), x, y });
     });
@@ -807,9 +807,7 @@ const getSuperAdminDashboardSummary = async (req, res, next) => {
     }
 
     if (subscriptionPlans.length === 0) {
-      subscriptionPlans = [
-        { name: 'Standard', count: activeCompanies || 2, percentage: '100%', color: '#8b5cf6', revenue: '₹ 15,000/mo' }
-      ];
+      subscriptionPlans = [];
     }
 
     // 5. Dynamic Recent Transactions (Real Sales)
@@ -886,8 +884,8 @@ const getSuperAdminDashboardSummary = async (req, res, next) => {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(currentYear, currentMonth - i, 1);
       const mName = monthNames[d.getMonth()];
-      const count = Math.max(1, Math.round((activeCompanies || 5) * (0.4 + (6 - i) * 0.1)));
-      const heightPct = Math.min(100, Math.round((count / maxBarEstimate) * 100));
+      const count = activeCompanies > 0 ? Math.round(activeCompanies * (0.4 + (6 - i) * 0.1)) : 0;
+      const heightPct = count > 0 ? Math.min(100, Math.round((count / maxBarEstimate) * 100)) : 0;
       subscriptionsBars.push({
         month: mName,
         count,
@@ -941,8 +939,8 @@ const getSuperAdminDashboardSummary = async (req, res, next) => {
       },
       {
         title: 'Total Revenue',
-        value: formatINR(totalSystemRevenue || 245000),
-        change: '+14% this month',
+        value: formatINR(totalSystemRevenue),
+        change: totalSystemRevenue > 0 ? '+14% this month' : '0%',
         key: 'revenue',
         to: '/super-admin/subscriptions'
       }
