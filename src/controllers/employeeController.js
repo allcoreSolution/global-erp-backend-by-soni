@@ -127,11 +127,12 @@ const getEmployees = async (req, res, next) => {
     const hasViewPerm = canViewAllEmployees(req.user);
 
     if (hasViewPerm) {
-      const userCompanyId = req.user?.company || req.user?.companyId;
+      const rawComp = req.user?.company?._id || req.user?.company || req.user?.companyId;
+      const userCompanyId = rawComp ? rawComp.toString() : null;
       let query = {};
       
       if (userCompanyId) {
-        query = { $or: [{ company: userCompanyId }, { company: null }] };
+        query = { $or: [{ company: userCompanyId }, { company: rawComp }, { company: null }, { company: '' }] };
       } else if (req.query.company) {
         // Super Admin filtering by specific company ID or Name
         query = {
