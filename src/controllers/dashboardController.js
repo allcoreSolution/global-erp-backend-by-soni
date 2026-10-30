@@ -54,7 +54,11 @@ const userHasPermission = (user, permKey, moduleName = null) => {
 const getDashboardSummary = async (req, res, next) => {
   try {
     const user = req.user;
-    const companyId = user.company;
+    const requestedCompanyId = req.headers['x-company-id'];
+    const companyId = (requestedCompanyId && mongoose.Types.ObjectId.isValid(requestedCompanyId))
+      ? requestedCompanyId
+      : (user.companyId || user.company);
+
     const isSuperAdmin = user.role && user.role.name === 'SuperAdmin';
     const isAdmin = user.role && user.role.name === 'Admin';
     const hasFullAdminAccess = isSuperAdmin || isAdmin;
@@ -75,8 +79,8 @@ const getDashboardSummary = async (req, res, next) => {
     // Base match filters for tenant isolation supporting both ObjectId and String
     const dateMatch = { createdAt: { $gte: startOfYear, $lte: endOfYear } };
     const companyOid = (companyId && mongoose.Types.ObjectId.isValid(companyId)) ? new mongoose.Types.ObjectId(companyId.toString()) : null;
-    const companyFilter = isSuperAdmin ? null : (companyOid ? { $in: [companyId, companyId.toString(), companyOid] } : companyId);
-    const tenantMatch = isSuperAdmin ? {} : (companyFilter ? { company: companyFilter } : {});
+    const companyFilter = companyOid ? { $in: [companyId, companyId.toString(), companyOid] } : companyId;
+    const tenantMatch = companyFilter ? { company: companyFilter } : {};
 
     // ----------------------------------------------------
     // 1. DYNAMIC SALES CALCULATION
