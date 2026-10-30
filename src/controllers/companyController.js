@@ -209,18 +209,7 @@ const registerCompany = async (req, res, next) => {
 // @access  Private/SuperAdmin
 const getCompanies = async (req, res, next) => {
   try {
-    let filter = {};
-    if (req.user?.role?.name === 'SuperAdmin') {
-      filter = { creatorRole: 'SuperAdmin' };
-    } else if (req.user?.role?.name === 'Admin') {
-      filter.$or = [
-        { createdBy: req.user._id }
-      ];
-      if (req.user.company) {
-        filter.$or.push({ _id: req.user.company });
-      }
-    }
-    const companies = await Company.find(filter).populate('subscriptionPlan').sort({ createdAt: -1 });
+    const companies = await Company.find({}).populate('subscriptionPlan').sort({ createdAt: -1 });
     
     // Attach admin info to each company
     const companiesWithAdmin = await Promise.all(companies.map(async (company) => {
@@ -524,21 +513,7 @@ const createCompanyMaster = async (req, res, next) => {
 // @access  Private
 const getCompanySwitchOptions = async (req, res, next) => {
   try {
-    let filter = { isActive: true };
-    if (req.user?.role?.name === 'SuperAdmin') {
-      filter.creatorRole = 'SuperAdmin';
-    } else if (req.user?.role?.name === 'Admin') {
-      filter.$or = [
-        { createdBy: req.user._id }
-      ];
-      if (req.user.company) {
-        filter.$or.push({ _id: req.user.company });
-      }
-    } else if (req.user?.company) {
-      filter._id = req.user.company;
-    }
-
-    const companies = await Company.find(filter)
+    const companies = await Company.find({ isActive: true })
       .select('_id name code logoUrl gstin city state invoicePrefix drugLicenceNo dl20b dl21b fssaiNo bankName accountNumber ifscCode upiId address phone creatorRole')
       .sort({ createdAt: 1 });
     res.json({ success: true, companies });
@@ -639,8 +614,7 @@ const updateCompany = async (req, res, next) => {
 // @access  Private/SuperAdmin
 const getSubscriptions = async (req, res, next) => {
   try {
-    const filter = req.user?.role?.name === 'SuperAdmin' ? { creatorRole: 'SuperAdmin' } : {};
-    const companies = await Company.find(filter)
+    const companies = await Company.find({})
       .populate('subscriptionPlan')
       .sort({ createdAt: -1 });
 
