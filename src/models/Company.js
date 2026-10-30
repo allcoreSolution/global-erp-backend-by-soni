@@ -54,7 +54,11 @@ const companySchema = new mongoose.Schema({
   // Subscription Details
   subscriptionPlan: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan' },
   subscriptionStatus: { type: String, enum: ['Active', 'Expired', 'Suspended'], default: 'Active' },
-  subscriptionExpiry: { type: Date }
+  subscriptionExpiry: { type: Date },
+
+  // Multi-Tenant Isolation & Creator Ownership
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  creatorRole: { type: String, enum: ['SuperAdmin', 'Admin'], default: 'SuperAdmin' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Company', companySchema);
