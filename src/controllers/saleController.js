@@ -215,7 +215,8 @@ const createSale = async (req, res, next) => {
 // @access  Private
 const getSales = async (req, res, next) => {
   try {
-    const query = {}; // Temporarily remove company filter for testing
+    const activeCompId = req.headers['x-company-id'] || req.user?.companyId || req.user?.company;
+    const query = activeCompId ? { company: activeCompId } : {};
     
     // Add customer filter if provided
     if (req.query.customer) {

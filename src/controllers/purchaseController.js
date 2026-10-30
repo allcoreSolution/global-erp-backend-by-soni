@@ -250,7 +250,8 @@ const addPurchase = async (req, res, next) => {
 const getPurchases = async (req, res, next) => {
   try {
     const { supplierName, branchName, supplier } = req.query;
-    let filter = {};
+    const activeCompId = req.headers['x-company-id'] || req.user?.companyId || req.user?.company;
+    let filter = activeCompId ? { company: activeCompId } : {};
 
     if (supplier) {
       filter.supplier = supplier;

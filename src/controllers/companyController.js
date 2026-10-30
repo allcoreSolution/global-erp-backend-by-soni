@@ -213,13 +213,12 @@ const getCompanies = async (req, res, next) => {
     if (req.user?.role?.name === 'SuperAdmin') {
       filter = { creatorRole: 'SuperAdmin' };
     } else if (req.user?.role?.name === 'Admin') {
-      filter = {
-        $or: [
-          { createdBy: req.user._id },
-          { _id: req.user.company },
-          { creatorRole: 'Admin' }
-        ]
-      };
+      filter.$or = [
+        { createdBy: req.user._id }
+      ];
+      if (req.user.company) {
+        filter.$or.push({ _id: req.user.company });
+      }
     }
     const companies = await Company.find(filter).populate('subscriptionPlan').sort({ createdAt: -1 });
     
@@ -530,10 +529,11 @@ const getCompanySwitchOptions = async (req, res, next) => {
       filter.creatorRole = 'SuperAdmin';
     } else if (req.user?.role?.name === 'Admin') {
       filter.$or = [
-        { createdBy: req.user._id },
-        { _id: req.user.company },
-        { creatorRole: 'Admin' }
+        { createdBy: req.user._id }
       ];
+      if (req.user.company) {
+        filter.$or.push({ _id: req.user.company });
+      }
     } else if (req.user?.company) {
       filter._id = req.user.company;
     }

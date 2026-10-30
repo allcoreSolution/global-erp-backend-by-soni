@@ -48,6 +48,8 @@ const protect = async (req, res, next) => {
       // Set context for tenant isolation
       if (activeCompanyId) {
         req.user.companyId = activeCompanyId;
+        req.companyId = activeCompanyId;
+        req.user.company = activeCompanyId; // Synchronize active company across all controller conventions
         setContext('companyId', activeCompanyId);
       }
       if (req.user.role) {
