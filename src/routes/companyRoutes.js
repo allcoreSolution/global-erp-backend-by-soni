@@ -12,7 +12,9 @@ const {
   updateCompany,
   getCompanyById,
   getSubscriptions,
-  renewSubscription
+  renewSubscription,
+  createCompanyMaster,
+  getCompanySwitchOptions
 } = require('../controllers/companyController');
 
 // Middleware for SuperAdmin
@@ -26,7 +28,13 @@ const superAdminOnly = (req, res, next) => {
 
 router.use(protect);
 
-// Company Admin Routes (accessible by the logged in user of the company)
+// Fast Multi-Company Switch Options for Header Dropdown
+router.get('/switch-options', getCompanySwitchOptions);
+
+// Company Master direct creation from Admin Panel
+router.post('/create-master', createCompanyMaster);
+
+// Company Profile Routes (accessible by the logged in user of the company based on active context)
 router.get('/profile', getMyCompanyProfile);
 router.put('/profile', updateCompanyProfile);
 

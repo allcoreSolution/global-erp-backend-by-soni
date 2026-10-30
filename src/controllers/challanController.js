@@ -5,9 +5,13 @@ const { Challan } = require('../models/Challan');
 // @access  Private
 const createChallan = async (req, res, next) => {
   try {
-    let challanNo = req.body.challanNo;
-    if (!challanNo) {
-      challanNo = `CHL-${Math.floor(100000 + Math.random() * 900000)}`;
+    let challanNo = req.body.challanNo?.trim();
+    if (!challanNo || challanNo === 'AUTO-GEN') {
+      const yy = new Date().getFullYear().toString().slice(-2);
+      const mm = (new Date().getMonth() + 1).toString().padStart(2, '0');
+      const dd = new Date().getDate().toString().padStart(2, '0');
+      const rand = Math.floor(1000 + Math.random() * 9000);
+      challanNo = `CH-${yy}${mm}${dd}-${rand}`;
     }
     
     const newChallan = await Challan.create({

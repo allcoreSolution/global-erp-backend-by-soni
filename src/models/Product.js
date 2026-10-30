@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 // Brand Schema
 const brandSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true, trim: true },
+  founder: { type: String, default: '', trim: true },
+  realFounder: { type: String, default: '', trim: true },
   image: { type: String, default: '' },
   status: { type: Boolean, default: true },
   featured: { type: Boolean, default: false },
@@ -14,6 +16,7 @@ const brandSchema = new mongoose.Schema({
 const categorySchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true, trim: true },
   parent: { type: String, default: 'None' },
+  brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', default: null },
   image: { type: String, default: '' },
   status: { type: Boolean, default: true },
   numProducts: { type: Number, default: 0 },
@@ -35,17 +38,30 @@ const unitSchema = new mongoose.Schema({
 
 // Adjustment Schema
 const adjustmentSchema = new mongoose.Schema({
+  reference: { type: String, default: '' },
+  date: { type: String, default: '' },
   warehouse: { type: String, required: true },
   documentName: { type: String, default: null },
-  lossType: { type: String, default: 'Damage Loss' },
+  lossType: { type: String, default: 'General Adjustment' },
   items: [{
     name: { type: String },
     code: { type: String },
     batch: { type: String, default: '' },
-    cost: { type: Number },
-    quantity: { type: Number },
-    reason: { type: String, default: '' }
+    mfgDate: { type: String, default: '' },
+    expDate: { type: String, default: '' },
+    invoiceNo: { type: String, default: '' },
+    cost: { type: Number, default: 0 },
+    currentStock: { type: Number, default: 0 },
+    actionType: { type: String, enum: ['Subtract', 'Add'], default: 'Subtract' },
+    reason: { type: String, default: 'Damage' },
+    quantity: { type: Number, default: 1 },
+    totalCost: { type: Number, default: 0 },
+    remark: { type: String, default: '' }
   }],
+  totalQuantity: { type: Number, default: 0 },
+  totalLossCost: { type: Number, default: 0 },
+  totalGainCost: { type: Number, default: 0 },
+  netAmount: { type: Number, default: 0 },
   note: { type: String, default: '' },
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }
 }, { timestamps: true });
@@ -132,6 +148,11 @@ const productSchema = new mongoose.Schema({
     mfgDate: { type: String, default: '' },
     expDate: { type: String, default: '' },
     cost: { type: Number, default: 0 },
+    purchaseRate: { type: Number, default: 0 },
+    saleRate: { type: Number, default: 0 },
+    mrp: { type: Number, default: 0 },
+    profitMargin: { type: Number, default: 0 },
+    stock: { type: Number, default: 0 },
     purchaseQty: { type: Number, default: 0 },
     soldQty: { type: Number, default: 0 },
     returnedQty: { type: Number, default: 0 },

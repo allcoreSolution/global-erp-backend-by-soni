@@ -23,6 +23,7 @@ const supplierSchema = new mongoose.Schema({
   gstStatus: { type: String, default: 'Registered' },
   gstin: { type: String, default: '' },
   pan: { type: String, default: '' },
+  tan: { type: String, default: '' },
   taxPreference: { type: String, default: 'Taxable' },
   tdsApplicable: { type: Boolean, default: false },
   

@@ -22,13 +22,14 @@ const { DebitNote } = require('./src/models/DebitNote');
 const { Journal } = require('./src/models/Journal');
 const Payslip = require('./src/models/Payslip');
 
-const ATLAS_URI = 'mongodb+srv://tiwarisoni671_db_user:HCBQL32nEKmtVe0V@cluster0.w5wpuw7.mongodb.net/erp_global?retryWrites=true&w=majority';
+const ATLAS_BASE_URI = 'mongodb+srv://tiwarisoni671_db_user:HCBQL32nEKmtVe0V@cluster0.w5wpuw7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
-async function seedLiveAtlas() {
+async function seedDatabase(targetDbName) {
   try {
-    console.log('Connecting to Live MongoDB Atlas...');
-    await mongoose.connect(ATLAS_URI);
-    console.log('Connected to Live MongoDB Atlas successfully!');
+    console.log(`\n===========================================================`);
+    console.log(`Connecting to Live MongoDB Atlas [Database: ${targetDbName}]...`);
+    await mongoose.connect(ATLAS_BASE_URI, { dbName: targetDbName });
+    console.log(`Connected to Live MongoDB Atlas [Database: ${targetDbName}] successfully!`);
 
     // ----------------------------------------------------
     // 0. SuperAdmin & Admin Roles & SuperAdmin User
@@ -475,7 +476,8 @@ async function seedLiveAtlas() {
     await Purchase.create({
       purchaseDate: '2026-04-03',
       purchaseType: 'Fixed Asset',
-      referenceNo: 'VCH-05',
+      billNo: 'BILL-001',
+      referenceNo: '',
       purchaseNo: 'PUR-AST-01',
       invoiceNo: 'AST-FURN-01',
       company: compId,
@@ -501,7 +503,8 @@ async function seedLiveAtlas() {
     await Purchase.create({
       purchaseDate: '2026-04-03',
       purchaseType: 'Fixed Asset',
-      referenceNo: 'VCH-06',
+      billNo: 'BILL-002',
+      referenceNo: '',
       purchaseNo: 'PUR-AST-02',
       invoiceNo: 'AST-COMP-01',
       company: compId,
@@ -527,7 +530,8 @@ async function seedLiveAtlas() {
     await Purchase.create({
       purchaseDate: '2026-04-04',
       purchaseType: 'Trading Goods',
-      referenceNo: 'VCH-07',
+      billNo: 'BILL-003',
+      referenceNo: '',
       purchaseNo: 'PUR-001',
       invoiceNo: 'PPL-001',
       company: compId,
@@ -560,7 +564,8 @@ async function seedLiveAtlas() {
     await Purchase.create({
       purchaseDate: '2026-04-06',
       purchaseType: 'Trading Goods',
-      referenceNo: 'VCH-08',
+      billNo: 'BILL-004',
+      referenceNo: '',
       purchaseNo: 'PUR-002',
       invoiceNo: 'MHD-001',
       company: compId,
@@ -960,25 +965,30 @@ async function seedLiveAtlas() {
       createdAt: new Date('2026-04-30T19:00:00Z')
     });
 
-    console.log('-----------------------------------------------------------');
-    console.log('LIVE ATLAS DATABASE SEEDED WITH 100% PRECISION!');
+    console.log(`LIVE ATLAS [${targetDbName}] SEEDED WITH 100% PRECISION!`);
     console.log('Company ID:', compId);
-    console.log('Super Admin Credentials:');
-    console.log('  Email:    superadmin@gmail.com');
-    console.log('  Password: Super123');
-    console.log('');
-    console.log('Company Admin Credentials:');
-    console.log('  Email:    admin@apexpharma.com');
-    console.log('  Password: ApexAdmin@123');
-    console.log('  (Backup login email: apexpharma@gmail.com / ApexAdmin@123)');
-    console.log('-----------------------------------------------------------');
+    console.log('Super Admin: superadmin@gmail.com / Super123');
+    console.log('Company Admin: admin@apexpharma.com / ApexAdmin@123');
+    console.log('===========================================================');
 
     await mongoose.disconnect();
-    process.exit(0);
   } catch (err) {
-    console.error('Atlas Seeding Error:', err);
+    console.error(`Atlas Seeding Error for [${targetDbName}]:`, err);
+    try { await mongoose.disconnect(); } catch(_) {}
+    throw err;
+  }
+}
+
+async function runAll() {
+  try {
+    await seedDatabase('erp_global');
+    await seedDatabase('test');
+    console.log('\n>>> BOTH erp_global AND test DATABASES FULLY SEEDED ON LIVE ATLAS! <<<');
+    process.exit(0);
+  } catch (e) {
+    console.error('Fatal error during seeding:', e);
     process.exit(1);
   }
 }
 
-seedLiveAtlas();
+runAll();

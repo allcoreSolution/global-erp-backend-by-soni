@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { Branch } = require('../models/Branch');
 
 const createBranch = async (req, res, next) => {
@@ -7,17 +8,10 @@ const createBranch = async (req, res, next) => {
       id = `BR-${Date.now().toString().slice(-4)}`;
     }
     
-    let branchData = { ...req.body };
-    if (branchData.gstStatus === 'Unregistered') {
-      branchData.gstin = '';
-      branchData.tan = '';
-      branchData.hsn = ''; // even if not in schema, safe to clear
-    }
-
     const companyId = req.user?.company || req.user?.companyId || req.body.company;
 
     const branch = await Branch.create({
-      ...branchData,
+      ...req.body,
       id,
       company: companyId || null
     });
@@ -36,10 +30,7 @@ const getBranches = async (req, res, next) => {
     const userCompany = req.user?.company || req.user?.companyId;
     const query = userCompany ? { company: userCompany } : {};
     
-    console.log('Fetching branches with query:', query);
-    const branches = await Branch.find(query);
-    console.log(`Found ${branches.length} branches in DB for this company.`);
-    
+    const branches = await Branch.find(query).sort({ createdAt: -1 });
     res.json({ success: true, data: branches });
   } catch (error) {
     console.error('Error fetching branches:', error);
@@ -49,7 +40,15 @@ const getBranches = async (req, res, next) => {
 
 const getBranchById = async (req, res, next) => {
   try {
-    const branch = await Branch.findById(req.params.id);
+    const query = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? { _id: req.params.id }
+      : { id: req.params.id };
+
+    if (req.user?.company) {
+      query.company = req.user.company;
+    }
+
+    const branch = await Branch.findOne(query);
     if (!branch) {
       res.status(404);
       return next(new Error('Branch not found'));
@@ -62,14 +61,15 @@ const getBranchById = async (req, res, next) => {
 
 const updateBranch = async (req, res, next) => {
   try {
-    let updateData = { ...req.body };
-    if (updateData.gstStatus === 'Unregistered') {
-      updateData.gstin = '';
-      updateData.tan = '';
-      updateData.hsn = '';
+    const query = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? { _id: req.params.id }
+      : { id: req.params.id };
+
+    if (req.user?.company) {
+      query.company = req.user.company;
     }
 
-    const branch = await Branch.findByIdAndUpdate(req.params.id, updateData, {
+    const branch = await Branch.findOneAndUpdate(query, req.body, {
       new: true,
       runValidators: true
     });
@@ -85,8 +85,16 @@ const updateBranch = async (req, res, next) => {
 
 const patchBranch = async (req, res, next) => {
   try {
-    const branch = await Branch.findByIdAndUpdate(
-      req.params.id, 
+    const query = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? { _id: req.params.id }
+      : { id: req.params.id };
+
+    if (req.user?.company) {
+      query.company = req.user.company;
+    }
+
+    const branch = await Branch.findOneAndUpdate(
+      query, 
       { $set: req.body }, 
       { new: true, runValidators: true }
     );
@@ -102,7 +110,15 @@ const patchBranch = async (req, res, next) => {
 
 const deleteBranch = async (req, res, next) => {
   try {
-    const branch = await Branch.findOneAndDelete({ _id: req.params.id, company: req.user.company });
+    const query = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? { _id: req.params.id }
+      : { id: req.params.id };
+
+    if (req.user?.company) {
+      query.company = req.user.company;
+    }
+
+    const branch = await Branch.findOneAndDelete(query);
     if (!branch) {
       res.status(404);
       return next(new Error('Branch not found'));

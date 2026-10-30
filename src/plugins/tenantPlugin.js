@@ -20,8 +20,8 @@ const tenantPlugin = (schema, options) => {
     const companyId = getContext('companyId');
     const roleName = getContext('roleName');
 
-    // SuperAdmin bypasses isolation
-    if (roleName === 'SuperAdmin') {
+    // SuperAdmin bypasses isolation ONLY if no active company was selected
+    if (roleName === 'SuperAdmin' && !companyId) {
       return;
     }
 
@@ -54,7 +54,7 @@ const tenantPlugin = (schema, options) => {
     const companyId = getContext('companyId');
     const roleName = getContext('roleName');
 
-    if (roleName === 'SuperAdmin') {
+    if (roleName === 'SuperAdmin' && !companyId) {
       return;
     }
 

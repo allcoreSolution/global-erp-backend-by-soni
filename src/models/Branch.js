@@ -16,11 +16,6 @@ const branchSchema = new mongoose.Schema({
   city: { type: String, default: 'Lucknow' },
   district: { type: String, default: '' },
   pincode: { type: String, default: '' },
-  gstStatus: { type: String, default: 'Registered' },
-  gstin: { type: String, default: '' },
-  pan: { type: String, default: '' },
-  tan: { type: String, default: '' },
-
   // ✅ Fixed: Proper ObjectId reference to Company
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
   documentUrl: { type: String, default: '' }

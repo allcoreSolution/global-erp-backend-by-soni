@@ -9,6 +9,8 @@ const saleItemSchema = new mongoose.Schema({
   taxPercent: { type: Number, default: 0 },
   total: { type: Number, default: 0 },
   batch: { type: String, default: '' },
+  billNo: { type: String, default: '' },
+  mrp: { type: Number, default: 0 },
   expDate: { type: String, default: '' },
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }
 });

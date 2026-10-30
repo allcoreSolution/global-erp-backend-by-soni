@@ -5,6 +5,8 @@ const challanItemSchema = new mongoose.Schema({
   productName: { type: String, default: '' },
   sku: { type: String, default: '' },
   batch: { type: String, default: '' },
+  billNo: { type: String, default: '' },
+  expDate: { type: String, default: '' },
   qty: { type: String, default: '' },
   unit: { type: String, default: '' },
   rate: { type: String, default: '' }

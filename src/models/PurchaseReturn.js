@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 
 const returnItemSchema = new mongoose.Schema({
-  product: { type: String, required: true },
+  product: { type: String, default: '' },
+  productName: { type: String, default: '' },
+  code: { type: String, default: '' },
   batch: { type: String, default: '' },
   purchasedQty: { type: Number, default: 0 },
   returnQty: { type: Number, required: true, default: 1 },
@@ -12,19 +14,21 @@ const returnItemSchema = new mongoose.Schema({
 
 const purchaseReturnSchema = new mongoose.Schema({
   // Basic Details
-  returnNo: { type: String, required: true, unique: true },
+  returnNo: { type: String, default: '' },
   returnDate: { type: String, required: true },
   returnType: { type: String, default: 'Partial' },
   company: { type: String, default: '' },
   branch: { type: String, default: '' },
-  warehouse: { type: String, ref: 'Warehouse', default: '' },
+  warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse', default: null },
   status: { type: String, default: 'Draft' },
 
   // Purchase Ref Info
   purchaseInvoice: { type: String, default: '' },
+  purchaseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Purchase', default: null },
+  invoiceNo: { type: String, default: '' },
   purchaseOrder: { type: String, default: '' },
   purchaseDate: { type: String, default: '' },
-  supplier: { type: String, ref: 'Supplier', default: '' },
+  supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', default: null },
   supplierInvoiceNo: { type: String, default: '' },
   grnNo: { type: String, default: '' },
 

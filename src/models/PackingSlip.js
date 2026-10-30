@@ -7,6 +7,8 @@ const packingSlipProductSchema = new mongoose.Schema({
   orderedQty: { type: Number, default: 0 },
   packQty: { type: Number, default: 0 },
   batchNo: { type: String, default: '' },
+  billNo: { type: String, default: '' },
+  expDate: { type: String, default: '' },
   packagesCount: { type: Number, default: 1 },
   weight: { type: Number, default: 0 }
 });

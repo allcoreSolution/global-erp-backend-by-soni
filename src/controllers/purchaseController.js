@@ -64,6 +64,8 @@ const processStockForItem = async (item, warehouseId, companyId, isReverse = fal
       sku: autoCode,
       productCost: autoCost,
       productPrice: autoPrice,
+      mrp: Number(item.mrp) || 0,
+      profitMargin: String(item.profitMargin || 0),
       hsnNumber: item.hsnNumber || '',
       brand: brandId,
       category: categoryId,
@@ -87,8 +89,12 @@ const processStockForItem = async (item, warehouseId, companyId, isReverse = fal
   // Step 4: Race condition prevent karne ke liye $inc use karo aur direct update karo
   const updateData = { $inc: { currentStock: stockChange } };
   
-  if (!isReverse && item.netUnitCost) {
-    updateData.$set = { productCost: String(item.netUnitCost) };
+  if (!isReverse) {
+    updateData.$set = {};
+    if (item.netUnitCost) updateData.$set.productCost = String(item.netUnitCost);
+    if (item.productPrice) updateData.$set.productPrice = String(item.productPrice);
+    if (item.mrp) updateData.$set.mrp = Number(item.mrp);
+    if (item.profitMargin) updateData.$set.profitMargin = String(item.profitMargin);
   }
 
   // Update DB directly to prevent race condition lost updates
@@ -98,15 +104,20 @@ const processStockForItem = async (item, warehouseId, companyId, isReverse = fal
   if (!isReverse && item.batch) {
     const existingBatch = dbProduct.batches?.find(b => b.batchNo === item.batch);
     if (existingBatch) {
+      const batchUpdate = {
+        batchNo: item.batch,
+        ...(item.mfgDate && { mfgDate: item.mfgDate }),
+        ...(item.expDate && { expDate: item.expDate }),
+        ...(item.netUnitCost && { "batches.$.purchaseRate": Number(item.netUnitCost), "batches.$.cost": Number(item.netUnitCost) }),
+        ...(item.productPrice && { "batches.$.saleRate": Number(item.productPrice) }),
+        ...(item.mrp && { "batches.$.mrp": Number(item.mrp) }),
+        ...(item.profitMargin && { "batches.$.profitMargin": Number(item.profitMargin) })
+      };
       await Product.updateOne(
         { _id: dbProduct._id, "batches.batchNo": item.batch },
         { 
-          $inc: { "batches.$.stock": stockChange },
-          $set: {
-            batchNo: item.batch,
-            ...(item.mfgDate && { mfgDate: item.mfgDate }),
-            ...(item.expDate && { expDate: item.expDate })
-          }
+          $inc: { "batches.$.stock": stockChange, "batches.$.remainingQty": stockChange },
+          $set: batchUpdate
         }
       );
     } else {
@@ -119,7 +130,13 @@ const processStockForItem = async (item, warehouseId, companyId, isReverse = fal
               mfgDate: item.mfgDate || null, 
               expDate: item.expDate || null, 
               stock: qty, 
-              purchaseRate: Number(item.netUnitCost) || 0 
+              purchaseQty: qty,
+              remainingQty: qty,
+              purchaseRate: Number(item.netUnitCost) || 0,
+              cost: Number(item.netUnitCost) || 0,
+              saleRate: Number(item.productPrice) || 0,
+              mrp: Number(item.mrp) || 0,
+              profitMargin: Number(item.profitMargin) || 0
             } 
           },
           $set: {
@@ -191,15 +208,17 @@ const addPurchase = async (req, res, next) => {
     const finalGrandTotal = Number(req.body.grandTotal) || calculatedTotal;
 
     // Purchase number generate karo
-    const purchaseNo = req.body.purchaseNo || req.body.invoiceNo || req.body.referenceNo || `PUR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
-    const invoiceNo = req.body.invoiceNo || req.body.purchaseNo || purchaseNo;
+    const purchaseNo = req.body.purchaseNo || req.body.invoiceNo || req.body.billNo || req.body.referenceNo || `PUR-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    const invoiceNo = req.body.invoiceNo || req.body.billNo || req.body.purchaseNo || purchaseNo;
+    const billNo = req.body.billNo || '';
 
     const createdPurchases = await Purchase.create([{
       ...req.body,
       orderItems: processedItems,
       purchaseNo: purchaseNo,
       invoiceNo: invoiceNo,
-      referenceNo: req.body.referenceNo || purchaseNo,
+      billNo: billNo,
+      referenceNo: req.body.referenceNo || billNo || invoiceNo || purchaseNo,
       grandTotal: finalGrandTotal,
       company: companyId
     }]);

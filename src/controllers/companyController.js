@@ -143,6 +143,44 @@ const registerCompany = async (req, res, next) => {
       isActive: true
     });
 
+    // 10. Automated Default Setup (Head Office Branch + Main Godown + Cash Account)
+    try {
+      const { Branch } = require('../models/Branch');
+      const { Warehouse } = require('../models/Warehouse');
+      const AccountLedger = require('../models/AccountLedger');
+
+      let defaultBranch = await Branch.create({
+        id: `BR-${compCode}-HO`,
+        code: 'HO',
+        name: 'Head Office',
+        company: company._id,
+        city: company.city || 'Lucknow',
+        state: company.state || 'Uttar Pradesh',
+        status: 'Active'
+      });
+
+      if (defaultBranch) {
+        await Warehouse.create({
+          name: 'Main Godown',
+          code: 'WH-01',
+          branch: defaultBranch._id,
+          company: company._id,
+          status: true
+        });
+      }
+
+      await AccountLedger.create({
+        accountName: 'Cash in Hand',
+        groupType: 'Asset',
+        openingBalance: 0,
+        balanceType: 'Dr',
+        description: 'Default Cash Account',
+        company: company._id
+      });
+    } catch (setupErr) {
+      console.warn('Auto-setup notice:', setupErr.message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Company and primary Admin created successfully!',
@@ -232,24 +270,29 @@ const updateSubscription = async (req, res, next) => {
   }
 };
 
-// @desc    Get the logged-in user's company profile
+// @desc    Get the active company profile based on active context
 // @route   GET /api/companies/profile
 // @access  Private (Admins or any user)
 const getMyCompanyProfile = async (req, res, next) => {
   try {
     let company = null;
-    if (req.user && req.user.company) {
-      company = await Company.findById(req.user.company);
+    const targetCompId = req.user?.companyId || req.user?.company;
+    if (targetCompId) {
+      company = await Company.findById(targetCompId).populate('subscriptionPlan');
     }
     if (!company) {
-      // Fallback to first existing company in database
-      company = await Company.findOne();
+      // Fallback to first existing active company in database
+      company = await Company.findOne({ isActive: true }).populate('subscriptionPlan');
+    }
+    if (!company) {
+      company = await Company.findOne().populate('subscriptionPlan');
     }
     if (!company) {
       // If no company exists at all, create a default one
       company = await Company.create({
-        name: 'GLOBAL ERP SERVICES LTD.',
-        email: req.user?.email || 'admin@globalerp.com',
+        name: 'Apex Pharma Distributors',
+        code: 'APD',
+        email: req.user?.email || 'admin@apexpharma.com',
         phone: '1800-000-000',
         currency: 'INR (₹)',
         financialYear: '2024-2025',
@@ -262,21 +305,25 @@ const getMyCompanyProfile = async (req, res, next) => {
   }
 };
 
-// @desc    Update the logged-in user's company profile (including logo and theme)
+// @desc    Update the active company profile (including logo, banking, pharma licences)
 // @route   PUT /api/companies/profile
 // @access  Private (Admins only)
 const updateCompanyProfile = async (req, res, next) => {
   try {
     const { 
-      name, code, email, phone, website, address, gstNumber, pan, cin, tan, logoUrl, themeColor,
+      name, code, email, phone, whatsapp, website, address, city, state, pincode,
+      gstin, gstNumber, pan, panNumber, cin, tan, logoUrl, themeColor,
       financialYear, currency, dateFormat, invoicePrefix, terms, signature,
-      ownerName, constitution, drugLicenceNo, drugLicenceValidity, valuationMethod, dispatchMethod,
-      negativeStockAllowed
+      ownerName, constitution, businessType,
+      drugLicenceNo, dl20b, dl21b, fssaiNo, drugLicenceValidity,
+      bankName, accountNumber, ifscCode, branchName, upiId,
+      valuationMethod, dispatchMethod, negativeStockAllowed
     } = req.body;
     
     let company = null;
-    if (req.user && req.user.company) {
-      company = await Company.findById(req.user.company);
+    const targetCompId = req.user?.companyId || req.user?.company;
+    if (targetCompId) {
+      company = await Company.findById(targetCompId);
     }
     if (!company) {
       company = await Company.findOne();
@@ -285,30 +332,50 @@ const updateCompanyProfile = async (req, res, next) => {
       company = new Company();
     }
 
+    // भाग A: कानूनी व बेसिक
     if (name) company.name = name;
     if (code !== undefined) company.code = code;
-    if (email !== undefined) company.email = email;
-    if (phone !== undefined) company.phone = phone;
-    if (website !== undefined) company.website = website;
+    if (constitution !== undefined) company.constitution = constitution;
+    if (ownerName !== undefined) company.ownerName = ownerName;
+    if (businessType !== undefined) company.businessType = businessType;
+
+    // भाग B: टैक्स व ड्रग लाइसेंस
+    if (gstin !== undefined) company.gstin = gstin;
+    else if (gstNumber !== undefined) company.gstin = gstNumber;
+    if (panNumber !== undefined) company.panNumber = panNumber;
+    else if (pan !== undefined) company.panNumber = pan;
+    if (drugLicenceNo !== undefined) company.drugLicenceNo = drugLicenceNo;
+    if (dl20b !== undefined) company.dl20b = dl20b;
+    if (dl21b !== undefined) company.dl21b = dl21b;
+    if (fssaiNo !== undefined) company.fssaiNo = fssaiNo;
+    if (drugLicenceValidity !== undefined) company.drugLicenceValidity = drugLicenceValidity;
+
+    // भाग C: पता व संपर्क
     if (address !== undefined) company.address = address;
-    if (gstNumber !== undefined) company.gstNumber = gstNumber;
-    if (pan !== undefined) company.pan = pan;
-    if (cin !== undefined) company.cin = cin;
-    if (tan !== undefined) company.tan = tan;
+    if (city !== undefined) company.city = city;
+    if (state !== undefined) company.state = state;
+    if (pincode !== undefined) company.pincode = pincode;
+    if (phone !== undefined) company.phone = phone;
+    if (whatsapp !== undefined) company.whatsapp = whatsapp;
+    if (email !== undefined) company.email = email;
+    if (website !== undefined) company.website = website;
+
+    // भाग D: बैंक व बिल प्रिंटिंग
     if (logoUrl !== undefined) company.logoUrl = logoUrl;
     if (themeColor !== undefined) company.themeColor = themeColor;
-    
-    if (financialYear !== undefined) company.financialYear = financialYear;
-    if (currency !== undefined) company.currency = currency;
-    if (dateFormat !== undefined) company.dateFormat = dateFormat;
+    if (bankName !== undefined) company.bankName = bankName;
+    if (accountNumber !== undefined) company.accountNumber = accountNumber;
+    if (ifscCode !== undefined) company.ifscCode = ifscCode;
+    if (branchName !== undefined) company.branchName = branchName;
+    if (upiId !== undefined) company.upiId = upiId;
     if (invoicePrefix !== undefined) company.invoicePrefix = invoicePrefix;
     if (terms !== undefined) company.terms = terms;
     if (signature !== undefined) company.signature = signature;
 
-    if (ownerName !== undefined) company.ownerName = ownerName;
-    if (constitution !== undefined) company.constitution = constitution;
-    if (drugLicenceNo !== undefined) company.drugLicenceNo = drugLicenceNo;
-    if (drugLicenceValidity !== undefined) company.drugLicenceValidity = drugLicenceValidity;
+    // Operational
+    if (financialYear !== undefined) company.financialYear = financialYear;
+    if (currency !== undefined) company.currency = currency;
+    if (dateFormat !== undefined) company.dateFormat = dateFormat;
     if (valuationMethod !== undefined) company.valuationMethod = valuationMethod;
     if (dispatchMethod !== undefined) company.dispatchMethod = dispatchMethod;
     if (negativeStockAllowed !== undefined) company.negativeStockAllowed = Boolean(negativeStockAllowed);
@@ -321,7 +388,131 @@ const updateCompanyProfile = async (req, res, next) => {
       await User.findByIdAndUpdate(req.user._id, { company: updatedCompany._id });
     }
 
-    res.json(updatedCompany);
+    res.json({
+      success: true,
+      message: 'Company profile updated successfully!',
+      company: updatedCompany
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Create company directly from Admin Panel Company Master
+// @route   POST /api/companies/create-master
+// @access  Private (Admins or SuperAdmin)
+const createCompanyMaster = async (req, res, next) => {
+  try {
+    const {
+      name, code, constitution, ownerName, businessType,
+      gstin, panNumber, drugLicenceNo, dl20b, dl21b, fssaiNo, drugLicenceValidity,
+      address, city, state, pincode, phone, whatsapp, email, website,
+      logoUrl, bankName, accountNumber, ifscCode, branchName, upiId,
+      invoicePrefix, terms, signature, themeColor,
+      billingCycle, financialYear, currency
+    } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Company name is required' });
+    }
+
+    const compCode = (code || name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase()).trim();
+
+    const company = await Company.create({
+      name: name.trim(),
+      code: compCode,
+      constitution: constitution || 'Proprietorship',
+      ownerName: ownerName || '',
+      businessType: businessType || 'Pharmaceutical wholesale and distribution',
+      gstin: gstin || '',
+      panNumber: panNumber || '',
+      drugLicenceNo: drugLicenceNo || dl20b || '',
+      dl20b: dl20b || '',
+      dl21b: dl21b || '',
+      fssaiNo: fssaiNo || '',
+      drugLicenceValidity: drugLicenceValidity || '',
+      address: address || '',
+      city: city || 'Lucknow',
+      state: state || 'Uttar Pradesh',
+      pincode: pincode || '',
+      phone: phone || '',
+      whatsapp: whatsapp || '',
+      email: email || '',
+      website: website || '',
+      logoUrl: logoUrl || '',
+      bankName: bankName || '',
+      accountNumber: accountNumber || '',
+      ifscCode: ifscCode || '',
+      branchName: branchName || '',
+      upiId: upiId || '',
+      invoicePrefix: invoicePrefix || (compCode ? `${compCode}-` : 'INV/'),
+      terms: terms || 'Payment is due within credit period.',
+      signature: signature || `For ${name} - Authorized Signatory`,
+      themeColor: themeColor || '#1e293b',
+      billingCycle: billingCycle || 'yearly',
+      financialYear: financialYear || '2024-2025',
+      currency: currency || 'INR (₹)',
+      isActive: true,
+      subscriptionStatus: 'Active'
+    });
+
+    // Auto-setup: Branch, Warehouse, Cash Ledger
+    try {
+      const { Branch } = require('../models/Branch');
+      const { Warehouse } = require('../models/Warehouse');
+      const AccountLedger = require('../models/AccountLedger');
+
+      let branch = await Branch.create({
+        id: `BR-${compCode}-HO`,
+        code: 'HO',
+        name: 'Head Office',
+        company: company._id,
+        city: company.city || 'Lucknow',
+        state: company.state || 'Uttar Pradesh',
+        status: 'Active'
+      });
+
+      if (branch) {
+        await Warehouse.create({
+          name: 'Main Godown',
+          code: 'WH-01',
+          branch: branch._id,
+          company: company._id,
+          status: true
+        });
+      }
+
+      await AccountLedger.create({
+        accountName: 'Cash in Hand',
+        groupType: 'Asset',
+        openingBalance: 0,
+        balanceType: 'Dr',
+        description: 'Default Cash Account',
+        company: company._id
+      });
+    } catch (e) {
+      console.warn('Auto Setup notice for Company Master:', e.message);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Company "${company.name}" created successfully with automated Godown and Cash accounts!`,
+      company
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get switchable companies list for Header Dropdown
+// @route   GET /api/companies/switch-options
+// @access  Private
+const getCompanySwitchOptions = async (req, res, next) => {
+  try {
+    const companies = await Company.find({ isActive: true })
+      .select('_id name code logoUrl gstin city state invoicePrefix drugLicenceNo dl20b dl21b fssaiNo bankName accountNumber ifscCode upiId address phone')
+      .sort({ createdAt: 1 });
+    res.json({ success: true, companies });
   } catch (error) {
     next(error);
   }
@@ -547,5 +738,7 @@ module.exports = {
   updateCompany,
   getCompanyById,
   getSubscriptions,
-  renewSubscription
+  renewSubscription,
+  createCompanyMaster,
+  getCompanySwitchOptions
 };

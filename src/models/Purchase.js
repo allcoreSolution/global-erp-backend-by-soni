@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
@@ -8,6 +9,7 @@ const orderItemSchema = new mongoose.Schema({
   profitMargin: { type: Number, default: 0 },
   profitMarginType: { type: String, default: 'Percentage' },
   productPrice: { type: Number, default: 0 },
+  mrp: { type: Number, default: 0 },
   discount: { type: Number, default: 0 },
   taxPercent: { type: Number, default: 0 },
   batch: { type: String, default: '' },
@@ -25,6 +27,7 @@ const purchaseSchema = new mongoose.Schema({
   referenceNo: { type: String, default: '' },
   purchaseNo: { type: String, unique: true, sparse: true },
   invoiceNo: { type: String, default: '' },
+  billNo: { type: String, default: '' },
 
   // ✅ Fixed: Proper ObjectId references (Hierarchy: Company → Branch → Warehouse)
   company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },

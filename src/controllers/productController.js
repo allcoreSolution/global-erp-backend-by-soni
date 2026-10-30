@@ -89,8 +89,12 @@ const addCategory = async (req, res, next) => {
       else delete payload.company;
     }
     if (!payload.branch) delete payload.branch;
+    if (!payload.brand || payload.brand === 'None' || payload.brand === '') {
+      payload.brand = null;
+    }
     const category = await Category.create(payload);
-    res.status(201).json({ success: true, data: category });
+    const populated = await Category.findById(category._id).populate('brand', 'name status');
+    res.status(201).json({ success: true, data: populated || category });
   } catch (error) {
     next(error);
   }
@@ -98,7 +102,9 @@ const addCategory = async (req, res, next) => {
 
 const getCategories = async (req, res, next) => {
   try {
-    const categories = await Category.find({ company: req.user?.companyId });
+    const categories = await Category.find({ company: req.user?.companyId })
+      .populate('brand', 'name status')
+      .sort({ createdAt: -1 });
     res.json({ success: true, data: categories });
   } catch (error) {
     next(error);
@@ -109,11 +115,14 @@ const updateCategory = async (req, res, next) => {
   try {
     if (req.body.company === '') delete req.body.company;
     if (req.body.branch === '') delete req.body.branch;
+    if (req.body.brand === '' || req.body.brand === 'None' || req.body.brand === null) {
+      req.body.brand = null;
+    }
     
     const category = await Category.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
-    });
+    }).populate('brand', 'name status');
     if (!category) {
       res.status(404);
       return next(new Error('Category not found'));
@@ -147,6 +156,12 @@ const addBrand = async (req, res, next) => {
     }
     if (!payload.branch) delete payload.branch;
     
+    if (payload.realFounder && !payload.founder) {
+      payload.founder = payload.realFounder;
+    } else if (payload.founder && !payload.realFounder) {
+      payload.realFounder = payload.founder;
+    }
+
     const brand = await Brand.create(payload);
     res.status(201).json({ success: true, data: brand });
   } catch (error) {
@@ -168,6 +183,12 @@ const updateBrand = async (req, res, next) => {
     if (req.body.company === '') delete req.body.company;
     if (req.body.branch === '') delete req.body.branch;
     
+    if (req.body.realFounder && !req.body.founder) {
+      req.body.founder = req.body.realFounder;
+    } else if (req.body.founder && !req.body.realFounder) {
+      req.body.realFounder = req.body.founder;
+    }
+
     const brand = await Brand.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
@@ -254,23 +275,51 @@ const deleteUnit = async (req, res, next) => {
 const addAdjustment = async (req, res, next) => {
   try {
     const payload = { ...req.body };
-    if (!payload.company) {
-      if (req.user?.companyId) payload.company = req.user.companyId;
-      else delete payload.company;
+    const companyId = req.user?.companyId || payload.company;
+    if (companyId) {
+      payload.company = companyId;
+    } else {
+      delete payload.company;
     }
-    const adjustment = await Adjustment.create(payload);
 
-    // --- AUTOMATIC STOCK SYNC LOGIC ---
+    if (!payload.reference) {
+      payload.reference = `ADJ-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+    }
+    if (!payload.date) {
+      payload.date = new Date().toISOString().split('T')[0];
+    }
+
+    let calculatedTotalLoss = 0;
+    let calculatedTotalGain = 0;
+    let calculatedTotalQty = 0;
+
+    // --- AUTOMATIC STOCK & BATCH SYNC LOGIC ---
     if (payload.items && payload.items.length > 0) {
       for (const item of payload.items) {
+        const qty = Math.abs(Number(item.quantity) || 0);
+        const isSubtract = item.actionType === 'Subtract';
+        const qtyDiff = isSubtract ? -qty : qty;
+        calculatedTotalQty += qty;
+
+        const itemCost = Number(item.cost || 0);
+        const lineTotal = itemCost * qty;
+        item.totalCost = lineTotal;
+
+        if (isSubtract) {
+          calculatedTotalLoss += lineTotal;
+        } else {
+          calculatedTotalGain += lineTotal;
+        }
+
         let product = await Product.findOne({ 
           productCode: item.code, 
-          company: payload.company 
+          company: companyId 
         });
+        if (!product) {
+          product = await Product.findOne({ productCode: item.code });
+        }
 
         if (product) {
-          const qtyDiff = Number(item.quantity) || 0;
-          
           // 1. Update overall stock
           product.currentStock = (product.currentStock || 0) + qtyDiff;
 
@@ -285,12 +334,75 @@ const addAdjustment = async (req, res, next) => {
               product.warehouseStocks.push({ warehouse: payload.warehouse, stock: qtyDiff });
             }
           }
+
+          // 3. Update Batch stock if batch is specified
+          if (item.batch && product.batches && product.batches.length > 0) {
+            const bIndex = product.batches.findIndex(b => b.batchNo === item.batch);
+            if (bIndex !== -1) {
+              if (product.batches[bIndex].stock !== undefined) {
+                product.batches[bIndex].stock = (product.batches[bIndex].stock || 0) + qtyDiff;
+              }
+              if (product.batches[bIndex].remainingQty !== undefined) {
+                product.batches[bIndex].remainingQty = Math.max(0, (product.batches[bIndex].remainingQty || 0) + qtyDiff);
+              }
+            }
+          }
           
           await product.save();
         }
       }
     }
-    // ----------------------------------
+
+    payload.totalQuantity = calculatedTotalQty;
+    payload.totalLossCost = calculatedTotalLoss;
+    payload.totalGainCost = calculatedTotalGain;
+    payload.netAmount = calculatedTotalLoss - calculatedTotalGain;
+
+    const adjustment = await Adjustment.create(payload);
+
+    // --- AUTO-VOUCHER FOR DAY BOOK / AUDIT LOG (Double Entry) ---
+    try {
+      const Voucher = require('../models/Voucher');
+      const AccountLedger = require('../models/AccountLedger');
+      
+      if (calculatedTotalLoss > 0) {
+        let lossAcc = await AccountLedger.findOne({ accountName: 'Stock Loss & Damage Expense', company: companyId });
+        if (!lossAcc) {
+          lossAcc = await AccountLedger.create({ accountName: 'Stock Loss & Damage Expense', groupType: 'Expense', balanceType: 'Dr', company: companyId });
+        }
+
+        let invAcc = await AccountLedger.findOne({ accountName: 'Inventory / Stock on Hand', company: companyId });
+        if (!invAcc) {
+          invAcc = await AccountLedger.create({ accountName: 'Inventory / Stock on Hand', groupType: 'Asset', balanceType: 'Dr', company: companyId });
+        }
+
+        await Voucher.create({
+          voucherNo: `V-${adjustment.reference}`,
+          date: payload.date,
+          voucherType: 'Journal',
+          company: companyId,
+          status: 'Posted',
+          generalNarration: `Stock Adjustment (${payload.lossType || 'Stock Loss'}) - Ref: ${adjustment.reference} in ${payload.warehouse}`,
+          entries: [
+            {
+              account: lossAcc._id,
+              debitAmount: calculatedTotalLoss,
+              creditAmount: 0,
+              narration: `Stock loss/damage/expiry adjustment`
+            },
+            {
+              account: invAcc._id,
+              debitAmount: 0,
+              creditAmount: calculatedTotalLoss,
+              narration: `Inventory asset reduction`
+            }
+          ]
+        });
+      }
+    } catch (vErr) {
+      console.error("Voucher Auto-posting failed for Adjustment:", vErr);
+    }
+    // -------------------------------------------------------------
 
     res.status(201).json({ success: true, data: adjustment });
   } catch (error) {
@@ -302,6 +414,48 @@ const getAdjustments = async (req, res, next) => {
   try {
     const adjustments = await Adjustment.find({ company: req.user?.companyId }).sort({ createdAt: -1 });
     res.json({ success: true, data: adjustments });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Batch Purchase Inward Details Lookup
+const getBatchPurchaseInfo = async (req, res, next) => {
+  try {
+    const { batchNo, productCode } = req.query;
+    if (!batchNo) {
+      return res.json({ success: true, data: null });
+    }
+
+    const { Purchase } = require('../models/Purchase');
+    const query = {
+      $or: [
+        { 'orderItems.batch': batchNo },
+        { 'orderItems.code': productCode, 'orderItems.batch': batchNo }
+      ]
+    };
+    if (req.user?.companyId) {
+      query.company = req.user.companyId;
+    }
+
+    const purchase = await Purchase.findOne(query).sort({ createdAt: -1 }).populate('supplier', 'name phone');
+    if (!purchase) {
+      return res.json({ success: true, data: null });
+    }
+
+    const matchingItem = purchase.orderItems?.find(it => it.batch === batchNo || (productCode && it.code === productCode));
+    res.json({
+      success: true,
+      data: {
+        invoiceNo: purchase.invoiceNo || purchase.billNo || purchase.referenceNo || purchase.purchaseNo || '',
+        billNo: purchase.billNo || '',
+        purchaseDate: purchase.purchaseDate || '',
+        supplierName: purchase.supplier?.name || '',
+        cost: matchingItem?.netUnitCost || 0,
+        mfgDate: matchingItem?.mfgDate || '',
+        expDate: matchingItem?.expDate || ''
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -381,6 +535,7 @@ module.exports = {
   deleteUnit,
   addAdjustment,
   getAdjustments,
+  getBatchPurchaseInfo,
   addStockCount,
   getStockCounts,
   updateStockCount,

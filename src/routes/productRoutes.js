@@ -18,9 +18,13 @@ const {
   updateUnit,
   deleteUnit,
   addAdjustment,
-  getAdjustments
+  getAdjustments,
+  getBatchPurchaseInfo
 } = require('../controllers/productController');
 const { protect, checkPermission } = require('../middlewares/authMiddleware');
+
+// Batch Info Route
+router.get('/batch-info', protect, getBatchPurchaseInfo);
 
 // Product Routes
 router.get('/', protect, checkPermission('view_products'), getProducts);

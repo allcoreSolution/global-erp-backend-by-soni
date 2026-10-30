@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Role = require('../models/Role');
 const { setContext } = require('./tenantContext');
@@ -27,13 +28,30 @@ const protect = async (req, res, next) => {
         return next(new Error('User account is deactivated'));
       }
 
+      // Dynamic Company Switching via x-company-id Header
+      const requestedCompanyId = req.headers['x-company-id'];
+      const userRoleName = req.user.role?.name || '';
+      let activeCompanyId = req.user.company ? req.user.company.toString() : null;
+
+      if (requestedCompanyId && mongoose.Types.ObjectId.isValid(requestedCompanyId)) {
+        // SuperAdmin & Admin can switch to any active company
+        if (userRoleName === 'SuperAdmin' || userRoleName === 'Admin') {
+          activeCompanyId = requestedCompanyId;
+        } else if (
+          (req.user.company && req.user.company.toString() === requestedCompanyId) ||
+          (Array.isArray(req.user.assignedCompanies) && req.user.assignedCompanies.some(c => c.toString() === requestedCompanyId))
+        ) {
+          activeCompanyId = requestedCompanyId;
+        }
+      }
+
       // Set context for tenant isolation
-      if (req.user.company) {
-        req.user.companyId = req.user.company;
-        setContext('companyId', req.user.company);
+      if (activeCompanyId) {
+        req.user.companyId = activeCompanyId;
+        setContext('companyId', activeCompanyId);
       }
       if (req.user.role) {
-        setContext('roleName', req.user.role.name);
+        setContext('roleName', userRoleName);
       }
 
       next();

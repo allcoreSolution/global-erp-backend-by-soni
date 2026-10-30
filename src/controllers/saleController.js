@@ -63,7 +63,10 @@ const createSale = async (req, res, next) => {
       }
 
       const itemPrice = item.netUnitPrice || dbProduct.productPrice || dbProduct.salePrice || 0;
-      const itemTaxRate = item.taxPercent || dbProduct.taxRate || 0;
+      // ✅ Explicit check for 0% tax so 0 is not overridden by dbProduct.taxRate
+      const itemTaxRate = (item.taxPercent !== undefined && item.taxPercent !== null && item.taxPercent !== '') 
+        ? Number(item.taxPercent) 
+        : (Number(dbProduct.productTax) || Number(dbProduct.taxRate) || 0);
       
       const itemSubtotal = itemPrice * item.quantity;
       const itemDiscount = item.discount || 0;
@@ -84,6 +87,8 @@ const createSale = async (req, res, next) => {
         taxPercent: itemTaxRate,
         total: itemGrand,
         batch: item.batch || '',
+        billNo: item.billNo || '',
+        mrp: Number(item.mrp) || Number(dbProduct.mrp) || 0,
         expDate: item.expDate || ''
       });
 
@@ -105,6 +110,9 @@ const createSale = async (req, res, next) => {
         const batchIndex = dbProduct.batches.findIndex(b => b.batchNo === item.batch);
         if (batchIndex >= 0) {
           dbProduct.batches[batchIndex].stock -= item.quantity;
+          if (dbProduct.batches[batchIndex].remainingQty !== undefined) {
+            dbProduct.batches[batchIndex].remainingQty -= item.quantity;
+          }
         }
       }
       
@@ -113,18 +121,20 @@ const createSale = async (req, res, next) => {
 
     const parsedShipping = Number(shippingCost) || 0;
     const finalGrandTotal = subTotal + taxTotal - (discountTotal || 0) + parsedShipping;
-    const invoiceNo = `INV-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    const invoiceNo = (req.body.invoiceNo && String(req.body.invoiceNo).trim()) 
+      ? String(req.body.invoiceNo).trim() 
+      : `INV-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
 
     const newSale = await Sale.create({
       invoiceNo,
-      saleDate,
-      referenceNo,
-      biller,
+      saleDate: saleDate || new Date().toISOString().split('T')[0],
+      referenceNo: referenceNo || invoiceNo,
+      biller: biller || 'Admin Biller',
       warehouse,
       customer: customer || req.body.customerName,
-      customerMobile,
-      currency,
-      exchangeRate,
+      customerMobile: customerMobile || '',
+      currency: currency || 'INR',
+      exchangeRate: exchangeRate || '1',
       orderItems: computedItems,
       orderTax,
       discountType,

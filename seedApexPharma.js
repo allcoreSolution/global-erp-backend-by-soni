@@ -443,7 +443,8 @@ async function seedApexPharma() {
     await Purchase.create({
       purchaseDate: '2026-04-03',
       purchaseType: 'Fixed Asset',
-      referenceNo: 'VCH-05',
+      billNo: 'BILL-001',
+      referenceNo: '',
       purchaseNo: 'PUR-AST-01',
       invoiceNo: 'AST-FURN-01',
       company: apexCompany._id,
@@ -469,7 +470,8 @@ async function seedApexPharma() {
     await Purchase.create({
       purchaseDate: '2026-04-03',
       purchaseType: 'Fixed Asset',
-      referenceNo: 'VCH-06',
+      billNo: 'BILL-002',
+      referenceNo: '',
       purchaseNo: 'PUR-AST-02',
       invoiceNo: 'AST-COMP-01',
       company: apexCompany._id,
@@ -495,7 +497,8 @@ async function seedApexPharma() {
     await Purchase.create({
       purchaseDate: '2026-04-04',
       purchaseType: 'Trading Goods',
-      referenceNo: 'VCH-07',
+      billNo: 'BILL-003',
+      referenceNo: '',
       purchaseNo: 'PUR-001',
       invoiceNo: 'PPL-001',
       company: apexCompany._id,
@@ -528,7 +531,8 @@ async function seedApexPharma() {
     await Purchase.create({
       purchaseDate: '2026-04-06',
       purchaseType: 'Trading Goods',
-      referenceNo: 'VCH-08',
+      billNo: 'BILL-004',
+      referenceNo: '',
       purchaseNo: 'PUR-002',
       invoiceNo: 'MHD-001',
       company: apexCompany._id,

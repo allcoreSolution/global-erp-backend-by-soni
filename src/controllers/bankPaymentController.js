@@ -6,19 +6,55 @@ const { Purchase } = require('../models/Purchase');
 // @access  Private
 const createBankPayment = async (req, res, next) => {
   try {
-    const newBankPayment = await BankPayment.create({
-      ...req.body,
-      company: req.user?.companyId || req.body.company
-    });
+    const mongoose = require('mongoose');
+    const { Supplier } = require('../models/Supplier');
 
-    const adjustments = req.body.invoices || req.body.invoiceAdjustments;
+    const bankPaymentData = {
+      ...req.body,
+      paymentNo: req.body.paymentNo || `BPAY-${Date.now().toString().slice(-6)}`,
+      paymentDate: req.body.paymentDate || new Date().toISOString().slice(0, 10),
+      company: req.user?.companyId || req.body.company
+    };
+
+    const newBankPayment = await BankPayment.create(bankPaymentData);
+
+    const paidAmt = Number(req.body.amount || req.body.paymentAmount || 0);
+    if (req.body.supplierParty && paidAmt > 0) {
+      if (mongoose.Types.ObjectId.isValid(req.body.supplierParty)) {
+        await Supplier.findByIdAndUpdate(
+          req.body.supplierParty,
+          { $inc: { balance: -paidAmt } }
+        );
+      } else {
+        await Supplier.findOneAndUpdate(
+          { $or: [{ companyName: req.body.supplierParty }, { supplierCode: req.body.supplierParty }] },
+          { $inc: { balance: -paidAmt } }
+        );
+      }
+    }
+
+    let adjustments = req.body.invoices || req.body.invoiceAdjustments || [];
+    if ((!adjustments || adjustments.length === 0) && (req.body.purchase || req.body.purchaseInvoiceId || req.body.invoiceId || req.body.invoiceNo)) {
+      const singleInvId = req.body.purchase || req.body.purchaseInvoiceId || req.body.invoiceId || req.body.invoiceNo;
+      const singleAmt = paidAmt;
+      adjustments = [{ id: singleInvId, amount: singleAmt }];
+    }
     if (adjustments && adjustments.length > 0) {
       for (const inv of adjustments) {
-        const invId = inv.id || inv.invoiceId;
-        if (invId && inv.adjustAmount > 0) {
-          const purchase = await Purchase.findById(invId);
+        const invId = inv.id || inv.invoiceId || inv._id || inv.referenceNo || inv.invoiceNo;
+        const adjAmt = Number(inv.adjustAmount || inv.amount || 0);
+        if (invId && adjAmt > 0) {
+          let purchase = null;
+          if (mongoose.Types.ObjectId.isValid(invId)) {
+            purchase = await Purchase.findById(invId);
+          }
+          if (!purchase) {
+            purchase = await Purchase.findOne({
+              $or: [{ referenceNo: invId }, { purchaseNo: invId }]
+            });
+          }
           if (purchase) {
-            purchase.amountPaid = (purchase.amountPaid || 0) + Number(inv.adjustAmount);
+            purchase.amountPaid = (purchase.amountPaid || 0) + adjAmt;
             if (purchase.amountPaid >= purchase.grandTotal) {
               purchase.paymentStatus = 'Paid';
             } else if (purchase.amountPaid > 0) {

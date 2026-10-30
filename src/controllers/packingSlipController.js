@@ -5,16 +5,21 @@ const { PackingSlip } = require('../models/PackingSlip');
 // @access  Private
 const createPackingSlip = async (req, res, next) => {
   try {
-    let packingNo = req.body.packingNo;
-    if (!packingNo) {
+    let packingNo = req.body.packingNo?.trim();
+    if (!packingNo || packingNo === 'AUTO-GEN') {
       packingNo = `PS-${Math.floor(100000 + Math.random() * 900000)}`;
     }
     
-    const newPackingSlip = await PackingSlip.create({
+    const payload = {
       ...req.body,
       packingNo,
       company: req.user?.companyId || req.body.company
-    });
+    };
+
+    if (!payload.packedBy) delete payload.packedBy;
+    if (!payload.verifiedBy) delete payload.verifiedBy;
+
+    const newPackingSlip = await PackingSlip.create(payload);
 
     res.status(201).json({ success: true, data: newPackingSlip });
   } catch (error) {

@@ -324,13 +324,10 @@ app.use('/api/reports/stock', stockReportRoutes);
 const pharmaRoutes = require('./src/routes/pharmaRoutes');
 app.use('/api/pharma', pharmaRoutes);
 
-// Price List Routes
-const priceListRoutes = require('./src/routes/priceListRoutes');
-app.use('/api/price-lists', priceListRoutes);
-
-// Price Rule Routes
-const priceRuleRoutes = require('./src/routes/priceRuleRoutes');
-app.use('/api/price-rules', priceRuleRoutes);
+// Price List & Price Rule Routes - Disabled per user request
+app.use(['/api/price-lists', '/api/price-rules'], (req, res) => {
+  res.json({ success: true, data: [] });
+});
 
 // Tax Slab Routes
 const taxSlabRoutes = require('./src/routes/taxSlabRoutes');

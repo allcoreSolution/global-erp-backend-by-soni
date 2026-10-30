@@ -195,19 +195,56 @@ const getSupplierLedgerDetails = async (req, res, next) => {
       .sort({ purchaseDate: -1, createdAt: -1 })
       .lean();
 
-    // Payments to this supplier
+    // Payments to this supplier (Both Cash Payment and Bank Payment)
     let payments = [];
     try {
       const { Payment } = require('../models/Payment');
-      payments = await Payment.find({
-        $or: [
-          { supplierParty: supplier.companyName },
-          { supplierParty: supplier.supplierCode },
-          { supplierParty: id }
-        ]
-      }).sort({ paymentDate: -1 }).lean();
+      const { BankPayment } = require('../models/BankPayment');
+
+      const partyFilter = [
+        { supplierParty: supplier.companyName },
+        { supplierParty: supplier.supplierCode },
+        { supplierParty: id }
+      ];
+      if (supplier._id) partyFilter.push({ supplierParty: supplier._id.toString() });
+
+      const [cashPayments, bankPayments] = await Promise.all([
+        Payment.find({ $or: partyFilter }).sort({ paymentDate: -1, createdAt: -1 }).lean(),
+        BankPayment.find({ $or: partyFilter }).sort({ paymentDate: -1, createdAt: -1 }).lean()
+      ]);
+
+      const formattedCash = cashPayments.map(p => ({
+        ...p,
+        paymentTypeSource: 'Payment (Cash/General)',
+        paymentAmount: Number(p.paymentAmount || p.amount || 0),
+        amount: Number(p.paymentAmount || p.amount || 0),
+        paymentMethod: p.paymentMethod || 'Cash',
+        method: p.paymentMethod || 'Cash',
+        transactionRef: p.transactionRef || p.chequeNo || '—',
+        refNo: p.transactionRef || p.chequeNo || '—',
+        status: p.status || 'Success'
+      }));
+
+      const formattedBank = bankPayments.map(bp => ({
+        ...bp,
+        paymentTypeSource: 'Bank Payment',
+        paymentAmount: Number(bp.amount || bp.totals?.netPayment || 0),
+        amount: Number(bp.amount || bp.totals?.netPayment || 0),
+        paymentMethod: bp.method || 'Bank Transfer',
+        method: bp.method || 'Bank Transfer',
+        transactionRef: bp.utrNo || bp.chequeNo || '—',
+        refNo: bp.utrNo || bp.chequeNo || '—',
+        status: 'Success'
+      }));
+
+      // Combine and sort by date descending
+      payments = [...formattedCash, ...formattedBank].sort((a, b) => {
+        const dateA = new Date(a.paymentDate || a.createdAt || 0);
+        const dateB = new Date(b.paymentDate || b.createdAt || 0);
+        return dateB - dateA;
+      });
     } catch (err) {
-      console.warn('Payment fetch skipped:', err.message);
+      console.warn('Payment/BankPayment fetch skipped:', err.message);
     }
 
     // Invoices reference list
@@ -307,10 +344,20 @@ const getSupplierLedgerDetails = async (req, res, next) => {
       };
     });
 
+    // Unlinked (direct on-account) payments
+    let unlinkedPaymentsTotal = 0;
+    payments.forEach(pay => {
+      const hasLinked = pay.invoices && pay.invoices.length > 0;
+      if (!hasLinked) {
+        unlinkedPaymentsTotal += Number(pay.paymentAmount || pay.amount || 0);
+      }
+    });
+
+    const totalPaidOverall = totalPaidFromPurchases + unlinkedPaymentsTotal;
     const totalReturnsValue = returns.reduce((sum, ret) => sum + (Number(ret.totalRefundAmount) || 0), 0) ||
       debitNotes.reduce((sum, dn) => sum + (Number(dn.summary?.grandTotal || dn.amount) || 0), 0);
 
-    const netBalance = Math.max(0, totalPurchased - totalPaidFromPurchases - totalReturnsValue);
+    const netBalance = Math.max(0, totalPurchased - totalPaidOverall - totalReturnsValue);
 
     res.json({
       success: true,
@@ -322,7 +369,7 @@ const getSupplierLedgerDetails = async (req, res, next) => {
         debitNotes,
         summary: {
           totalPurchased,
-          totalPaid: totalPaidFromPurchases,
+          totalPaid: totalPaidOverall,
           totalReturns: totalReturnsValue,
           netBalance,
           totalInvoices: purchases.length,
