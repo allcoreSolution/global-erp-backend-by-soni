@@ -17,6 +17,9 @@ const Payslip = require('../models/Payslip');
 const { CreditNote } = require('../models/CreditNote');
 const { DebitNote } = require('../models/DebitNote');
 const { Journal } = require('../models/Journal');
+const { Customer } = require('../models/Customer');
+const { Supplier } = require('../models/Supplier');
+const Voucher = require('../models/Voucher');
 const mongoose = require('mongoose');
 const { MODULE_KEY_MAP } = require('../config/permissions');
 
@@ -115,15 +118,35 @@ const getDashboardSummary = async (req, res, next) => {
       totalSalesYear = salesAgg.reduce((acc, curr) => acc + curr.totalSales, 0);
 
       // Top selling items from real Sale records
+      // Top selling items from real Sale records (supports orderItems & items)
       try {
         const topAgg = await Sale.aggregate([
           { $match: { ...tenantMatch } },
-          { $unwind: "$items" },
+          {
+            $project: {
+              itemsList: {
+                $cond: {
+                  if: { $and: [ { $isArray: "$orderItems" }, { $gt: [{ $size: "$orderItems" }, 0] } ] },
+                  then: "$orderItems",
+                  else: { $ifNull: ["$items", []] }
+                }
+              }
+            }
+          },
+          { $unwind: "$itemsList" },
           {
             $group: {
-              _id: "$items.name",
-              totalQty: { $sum: "$items.quantity" },
-              totalAmount: { $sum: "$items.total" }
+              _id: { $ifNull: ["$itemsList.name", "$itemsList.productName"] },
+              totalQty: { $sum: "$itemsList.quantity" },
+              totalAmount: {
+                $sum: {
+                  $cond: {
+                    if: { $gt: ["$itemsList.total", 0] },
+                    then: "$itemsList.total",
+                    else: { $multiply: ["$itemsList.quantity", { $ifNull: ["$itemsList.netUnitPrice", "$itemsList.price", 0] }] }
+                  }
+                }
+              }
             }
           },
           { $sort: { totalAmount: -1 } },
@@ -145,7 +168,7 @@ const getDashboardSummary = async (req, res, next) => {
         recentSales = await Sale.find({ ...tenantMatch })
           .sort({ createdAt: -1 })
           .limit(3)
-          .select('invoiceNumber customerName grandTotal createdAt');
+          .populate('customer', 'name customerName businessName');
       } catch (_) {}
     }
 
@@ -178,7 +201,7 @@ const getDashboardSummary = async (req, res, next) => {
         recentPurchases = await Purchase.find({ ...tenantMatch })
           .sort({ createdAt: -1 })
           .limit(3)
-          .select('billNumber supplierName grandTotal createdAt');
+          .populate('supplier', 'companyName name supplierName');
       } catch (_) {}
     }
 
@@ -611,46 +634,114 @@ const getDashboardSummary = async (req, res, next) => {
     };
 
     if (canViewInventory) {
+      // 1. LOW STOCK ITEMS
       try {
-        const lowStockProducts = await Product.find({
-          ...tenantMatch,
-          $expr: { $lte: ["$currentStock", { $toDouble: { $ifNull: ["$alertQuantity", "10"] } }] }
-        }).limit(5).select('productName currentStock alertQuantity');
+        const prods = await Product.find({ ...tenantMatch })
+          .sort({ currentStock: 1 })
+          .limit(5)
+          .select('productName currentStock alertQuantity');
 
-        tables.lowStockData = lowStockProducts.map((p, idx) => ({
+        tables.lowStockData = prods.map((p, idx) => {
+          const alertQty = Number(p.alertQuantity) || 0;
+          const reorderLevel = alertQty > 0 ? alertQty : (p.currentStock > 0 ? 60 : 10);
+          return {
+            id: `${idx + 1}.`,
+            name: p.productName,
+            stock: String(p.currentStock ?? 0),
+            reorder: String(reorderLevel)
+          };
+        });
+      } catch (_) {}
+
+      // 2. EXPIRY ITEMS (from product batches or product level)
+      try {
+        const prodBatches = await Product.find({
+          ...tenantMatch,
+          $or: [
+            { "batches.0": { $exists: true } },
+            { expDate: { $exists: true, $ne: '' } }
+          ]
+        }).select('productName expDate batches currentStock');
+
+        const activeBatches = [];
+        prodBatches.forEach(p => {
+          if (Array.isArray(p.batches) && p.batches.length > 0) {
+            p.batches.forEach(b => {
+              if ((b.remainingQty > 0 || b.stock > 0) && b.expDate) {
+                activeBatches.push({
+                  name: b.batchNo ? `${p.productName} (${b.batchNo})` : p.productName,
+                  date: b.expDate,
+                  qty: b.remainingQty || b.stock || 0
+                });
+              }
+            });
+          } else if (p.expDate && p.currentStock > 0) {
+            activeBatches.push({
+              name: p.productName,
+              date: p.expDate,
+              qty: p.currentStock
+            });
+          }
+        });
+
+        activeBatches.sort((a, b) => new Date(a.date) - new Date(b.date));
+        tables.expiryData = activeBatches.slice(0, 5).map((item, idx) => ({
           id: `${idx + 1}.`,
-          name: p.productName,
-          stock: String(p.currentStock || 0),
-          reorder: String(p.alertQuantity || 10)
+          name: item.name,
+          date: item.date,
+          qty: String(item.qty)
         }));
       } catch (_) {}
     }
 
     // ----------------------------------------------------
-    // 8. DYNAMIC CASH & BANK BALANCE (From Database AccountLedgers)
+    // 8. DYNAMIC CASH & BANK BALANCE (From Database Ledgers & Vouchers)
     // ----------------------------------------------------
     let bankBalanceData = [];
     if (canViewAccounts || hasFullAdminAccess) {
       try {
         const ledgers = await AccountLedger.find({
           ...tenantMatch,
-          accountName: { $regex: /cash|bank|hdfc|icici|sbi/i }
-        }).limit(5);
+          groupType: { $ne: 'Expense' },
+          accountName: { $regex: /cash|bank|hdfc|icici|sbi/i, $not: /charges/i }
+        }).sort({ accountName: -1 });
 
         if (ledgers.length > 0) {
+          const ledgerIds = ledgers.map(l => l._id);
+          const vouchers = await Voucher.find({
+            ...tenantMatch,
+            'entries.account': { $in: ledgerIds }
+          }).lean();
+
+          const balanceMap = {};
+          ledgers.forEach(l => {
+            balanceMap[l._id.toString()] = l.openingBalance || 0;
+          });
+
+          vouchers.forEach(v => {
+            (v.entries || []).forEach(e => {
+              const accId = e.account ? e.account.toString() : '';
+              if (balanceMap[accId] !== undefined) {
+                balanceMap[accId] += ((e.debitAmount || 0) - (e.creditAmount || 0));
+              }
+            });
+          });
+
           let sumTotal = 0;
           bankBalanceData = ledgers.map(l => {
-            const bal = l.openingBalance || 0;
-            sumTotal += bal;
+            const netBal = Math.max(0, balanceMap[l._id.toString()] || 0);
+            sumTotal += netBal;
             return {
               particulars: l.accountName,
-              amount: `₹ ${bal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              amount: `₹ ${netBal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             };
           });
+
+          const totalFormatted = `₹ ${sumTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           bankBalanceData.push({
             particulars: 'Total Balance',
-            amount: `₹ ${sumTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            totalValue: `₹ ${sumTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            amount: totalFormatted,
+            totalValue: totalFormatted
           });
         }
       } catch (_) {}
@@ -661,21 +752,32 @@ const getDashboardSummary = async (req, res, next) => {
     // ----------------------------------------------------
     const dynamicActivities = [];
     recentSales.forEach(s => {
+      const inv = s.invoiceNo || s.invoiceNumber || 'INV';
+      const custName = s.customer?.name || s.customer?.customerName || s.customer?.businessName || s.customerName || 'Customer';
       dynamicActivities.push({
-        activity: `Sale Invoice #${s.invoiceNumber || 'INV'} Created`,
-        user: s.customerName || 'Customer',
-        time: s.createdAt ? new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today'
+        activity: `Sale Invoice #${inv} Created`,
+        user: custName,
+        time: s.createdAt ? new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today',
+        rawTime: s.createdAt ? new Date(s.createdAt).getTime() : 0
       });
     });
     recentPurchases.forEach(p => {
+      const bill = p.billNo || p.invoiceNo || p.purchaseNo || p.referenceNo || 'BILL';
+      const suppName = p.supplier?.companyName || p.supplier?.name || p.supplier?.supplierName || p.supplierName || 'Supplier';
       dynamicActivities.push({
-        activity: `Purchase Bill #${p.billNumber || 'BILL'} Saved`,
-        user: p.supplierName || 'Supplier',
-        time: p.createdAt ? new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today'
+        activity: `Purchase Bill #${bill} Saved`,
+        user: suppName,
+        time: p.createdAt ? new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today',
+        rawTime: p.createdAt ? new Date(p.createdAt).getTime() : 0
       });
     });
 
-    tables.recentActivities = dynamicActivities.slice(0, 5);
+    dynamicActivities.sort((a, b) => b.rawTime - a.rawTime);
+    tables.recentActivities = dynamicActivities.slice(0, 5).map(a => ({
+      activity: a.activity,
+      user: a.user,
+      time: a.time
+    }));
     tables.bankBalanceData = bankBalanceData;
 
     // ----------------------------------------------------
