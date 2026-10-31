@@ -1,31 +1,62 @@
 const { Receipt } = require('../models/Receipt');
 const { Sale } = require('../models/Sale');
 
+const mongoose = require('mongoose');
+
 // @desc    Create a new Receipt
 // @route   POST /api/receipts
 // @access  Private
 const createReceipt = async (req, res, next) => {
   try {
+    const company = req.headers['x-company-id'] || req.user?.companyId || req.user?.company || req.body.company;
+    let receiptNo = req.body.receiptNo;
+    if (!receiptNo) {
+      receiptNo = `RCP-${Date.now().toString().slice(-6)}`;
+    }
+
     const newReceipt = await Receipt.create({
       ...req.body,
-      company: req.user?.companyId || req.body.company
+      receiptNo,
+      company
     });
 
-    // Update Sale Payment Status and Paid Amount
-    if (req.body.referenceInvoice) {
-      const sale = await Sale.findById(req.body.referenceInvoice);
+    // Helper to update a specific sale
+    const updateSalePayment = async (invRef, amount) => {
+      if (!invRef || amount <= 0) return;
+      let sale = null;
+      if (mongoose.Types.ObjectId.isValid(invRef)) {
+        sale = await Sale.findById(invRef);
+      }
+      if (!sale) {
+        sale = await Sale.findOne({ invoiceNo: invRef });
+      }
       if (sale) {
-        sale.amountPaid = (sale.amountPaid || 0) + Number(req.body.paymentAmount || 0);
-        
+        sale.amountPaid = (sale.amountPaid || 0) + Number(amount);
         if (sale.amountPaid >= sale.grandTotal) {
           sale.paymentStatus = 'Paid';
         } else if (sale.amountPaid > 0) {
           sale.paymentStatus = 'Partial';
         } else {
-          sale.paymentStatus = 'Pending';
+          sale.paymentStatus = 'Due';
         }
-        
         await sale.save();
+      }
+    };
+
+    // 1. Single invoice reference
+    const directRef = req.body.referenceInvoice || req.body.saleId || req.body.invoiceNo;
+    if (directRef) {
+      await updateSalePayment(directRef, req.body.paymentAmount || req.body.amount || 0);
+    }
+
+    // 2. Multiple invoices adjustment array
+    if (Array.isArray(req.body.invoices) && req.body.invoices.length > 0) {
+      for (const inv of req.body.invoices) {
+        const invRef = inv.invoiceNo || inv.referenceNo || inv.id || inv.invoiceId;
+        const adjAmt = Number(inv.adjustAmount || inv.amount || 0);
+        if (invRef && adjAmt > 0) {
+          await updateSalePayment(invRef, adjAmt);
+        }
       }
     }
 

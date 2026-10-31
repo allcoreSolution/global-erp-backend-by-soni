@@ -204,12 +204,73 @@ const getCustomerLedgerDetails = async (req, res, next) => {
       if (customer.customerCode) receiptOr.push({ customerParty: customer.customerCode });
       if (customer.phone) receiptOr.push({ contactNumber: customer.phone });
 
-      receipts = await Receipt.find({ $or: receiptOr })
+      receipts = (await Receipt.find({ $or: receiptOr })
         .sort({ receiptDate: -1, createdAt: -1 })
-        .lean();
+        .lean()).map(r => ({
+          ...r,
+          source: 'Cash Receipt',
+          paymentAmount: Number(r.paymentAmount || r.amount || 0),
+          paymentMethod: r.paymentMethod || 'Cash',
+          status: r.status || 'Received'
+        }));
     } catch (err) {
       console.warn('Receipt fetch skipped:', err.message);
     }
+
+    // Bank Receipts for this customer
+    let bankReceipts = [];
+    try {
+      const { BankReceipt } = require('../models/BankReceipt');
+      const bReceiptOr = [{ customerParty: id }];
+      if (customer.name) bReceiptOr.push({ customerParty: customer.name });
+      if (customer.businessName) bReceiptOr.push({ customerParty: customer.businessName });
+      if (customer.customerCode) bReceiptOr.push({ customerParty: customer.customerCode });
+      if (customer.phone) bReceiptOr.push({ contactNumber: customer.phone });
+
+      const rawBankReceipts = await BankReceipt.find({ $or: bReceiptOr })
+        .sort({ receiptDate: -1, createdAt: -1 })
+        .lean();
+
+      bankReceipts = rawBankReceipts.map(br => ({
+        ...br,
+        source: 'Bank Receipt',
+        paymentAmount: Number(br.amount || br.paymentAmount || 0),
+        paymentMethod: br.method || br.channel || 'Bank Transfer',
+        transactionRef: br.referenceNumber || br.utrNo || br.chequeNo || '—',
+        status: br.status || 'Posted'
+      }));
+    } catch (err) {
+      console.warn('BankReceipt fetch skipped:', err.message);
+    }
+
+    // Combine all receipts for customer history
+    const allReceipts = [...receipts, ...bankReceipts].sort((a, b) => {
+      const da = a.receiptDate ? new Date(a.receiptDate) : (a.createdAt ? new Date(a.createdAt) : 0);
+      const db = b.receiptDate ? new Date(b.receiptDate) : (b.createdAt ? new Date(b.createdAt) : 0);
+      return db - da;
+    });
+
+    // Map receipts by invoice
+    const receiptsByInvoice = {};
+    const recordAdjustment = (invNo, amt) => {
+      if (invNo && amt > 0) {
+        receiptsByInvoice[invNo] = (receiptsByInvoice[invNo] || 0) + Number(amt);
+      }
+    };
+
+    receipts.forEach(r => {
+      if (r.referenceInvoice) recordAdjustment(r.referenceInvoice, r.paymentAmount);
+      if (Array.isArray(r.invoices)) {
+        r.invoices.forEach(inv => recordAdjustment(inv.invoiceNo || inv.referenceNo, inv.adjustAmount));
+      }
+    });
+
+    bankReceipts.forEach(br => {
+      if (br.invoiceNo) recordAdjustment(br.invoiceNo, br.amount);
+      if (Array.isArray(br.invoices)) {
+        br.invoices.forEach(inv => recordAdjustment(inv.invoiceNo || inv.referenceNo, inv.adjustAmount));
+      }
+    });
 
     // Returns & Credit Notes for this customer
     let returns = [];
@@ -279,16 +340,23 @@ const getCustomerLedgerDetails = async (req, res, next) => {
 
     const enrichedSales = sales.map(s => {
       const grandTotal = Number(s.grandTotal) || 0;
-      const amountPaid = Number(s.amountPaid) || 0;
+      const receiptAdjusted = Math.max(
+        receiptsByInvoice[s.invoiceNo] || 0,
+        s._id ? (receiptsByInvoice[s._id.toString()] || 0) : 0
+      );
+      const amountPaid = Math.max(Number(s.amountPaid) || 0, receiptAdjusted);
       const returnedAmount = returnByInvoice[s.invoiceNo] || 0;
       const balanceDue = Math.max(0, grandTotal - amountPaid - returnedAmount);
 
       totalSold += grandTotal;
       totalPaidFromSales += amountPaid;
 
-      if (s.saleStatus?.toLowerCase() === 'cancelled') {
+      const isCancelled = s.saleStatus?.toLowerCase() === 'cancelled';
+      const isPaid = !isCancelled && balanceDue === 0;
+
+      if (isCancelled) {
         cancelledInvoicesCount++;
-      } else if (balanceDue === 0 || s.paymentStatus?.toLowerCase() === 'paid') {
+      } else if (isPaid) {
         paidInvoicesCount++;
       } else {
         pendingInvoicesCount++;
@@ -296,8 +364,10 @@ const getCustomerLedgerDetails = async (req, res, next) => {
 
       return {
         ...s,
+        amountPaid,
         returnedAmount,
-        balanceDue
+        balanceDue,
+        paymentStatus: isCancelled ? 'Cancelled' : (isPaid ? 'Paid' : (amountPaid > 0 ? 'Partial' : 'Due'))
       };
     });
 
@@ -318,7 +388,7 @@ const getCustomerLedgerDetails = async (req, res, next) => {
           companyName: customer.businessName || customer.name
         },
         sales: enrichedSales,
-        receipts,
+        receipts: allReceipts,
         returns,
         creditNotes,
         summary: {
