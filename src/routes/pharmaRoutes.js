@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getBatchRecallReport,
   getQuarantineList,
   inspectQuarantineItem,
   getNearExpiryList,
@@ -9,10 +8,6 @@ const {
   createWriteOff
 } = require('../controllers/pharmaController');
 const { protect } = require('../middlewares/authMiddleware');
-
-// Batch Recall & Traceability
-router.get('/batch-recall/:batchNo', protect, getBatchRecallReport);
-router.get('/trace/:batchNo', protect, getBatchRecallReport);
 
 // Quarantine & Return Inspection
 router.get('/quarantine', protect, getQuarantineList);
