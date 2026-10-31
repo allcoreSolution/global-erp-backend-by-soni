@@ -110,9 +110,23 @@ const registerCompany = async (req, res, next) => {
       subscriptionPlan: resolvedPlan ? resolvedPlan._id : null,
       subscriptionStatus: 'Active',
       subscriptionExpiry: calculatedExpiry,
+      businessType: businessType || 'Office furniture trading',
+      constitution: constitution || 'Proprietorship',
+      ownerName: ownerName || '',
+      panNumber: panNumber || pan || '',
+      pincode: pincode || '',
+      financialYear: financialYear || '2026-2027',
+      currency: currency || 'INR (₹)',
+      valuationMethod: valuationMethod || 'FIFO',
+      dispatchMethod: dispatchMethod || 'FEFO',
+      negativeStockAllowed: negativeStockAllowed || false,
+      bankName: bankName || '',
+      invoicePrefix: invoicePrefix || 'AOS-',
+      signature: signature || '',
+      terms: terms || '',
       isActive: true,
       createdBy: req.user?._id,
-      creatorRole: 'SuperAdmin'
+      creatorRole: (req.user?.role?.name === 'Admin' || req.user?.role === 'Admin') ? 'Admin' : 'SuperAdmin'
     });
 
     // 7. Ensure Admin Role exists
