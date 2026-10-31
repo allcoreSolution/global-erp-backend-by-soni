@@ -59,8 +59,8 @@ const getDashboardSummary = async (req, res, next) => {
       ? requestedCompanyId
       : (user.companyId || user.company);
 
-    const isSuperAdmin = user.role && user.role.name === 'SuperAdmin';
-    const isAdmin = user.role && user.role.name === 'Admin';
+    const isSuperAdmin = (user.role && (user.role.name === 'SuperAdmin' || user.role === 'SuperAdmin')) || user.roleName === 'SuperAdmin';
+    const isAdmin = (user.role && (user.role.name === 'Admin' || user.role === 'Admin')) || user.roleName === 'Admin';
     const hasFullAdminAccess = isSuperAdmin || isAdmin;
 
     // Check permissions for specific functional modules
@@ -390,6 +390,60 @@ const getDashboardSummary = async (req, res, next) => {
           pieData.push({ name: 'Depreciation', value: depAmt, color: '#64748b' });
         }
       } catch (_) {}
+
+      // F. Double-Entry General Ledger Operating Expenses Fallback
+      if (pieData.length === 0) {
+        try {
+          const AccountLedger = require('../models/AccountLedger');
+          const Voucher = require('../models/Voucher');
+
+          const expenseLedgers = await AccountLedger.find({ ...tenantMatch, groupType: 'Expense' }).lean();
+          if (expenseLedgers.length > 0) {
+            const ledgerMap = {};
+            expenseLedgers.forEach(l => {
+              ledgerMap[l._id.toString()] = l.accountName;
+            });
+
+            const vouchers = await Voucher.find(tenantMatch).lean();
+            const expenseMap = {};
+            vouchers.forEach(v => {
+              (v.entries || []).forEach(e => {
+                const accId = e.account?.toString();
+                const accName = ledgerMap[accId];
+                if (accName && e.debitAmount > 0 && !['Inventory / Purchase', 'Purchase', 'Sales Return', 'COGS'].includes(accName)) {
+                  expenseMap[accName] = (expenseMap[accName] || 0) + e.debitAmount;
+                }
+              });
+            });
+
+            const palette = {
+              'Salary Expense': '#3b82f6',
+              'Rent': '#f97316',
+              'Marketing': '#ec4899',
+              'Electricity': '#10b981',
+              'Stationery': '#06b6d4',
+              'Interest': '#ef4444',
+              'Depreciation': '#64748b',
+              'Internet': '#f43f5e',
+              'Insurance': '#8b5cf6',
+              'Bank Charges': '#eab308'
+            };
+            const fallbackColors = ['#3b82f6', '#f97316', '#ec4899', '#10b981', '#06b6d4', '#ef4444', '#64748b', '#8b5cf6', '#eab308'];
+            let fbIdx = 0;
+
+            Object.entries(expenseMap)
+              .sort((a, b) => b[1] - a[1])
+              .forEach(([name, val]) => {
+                totalExpensesYear += val;
+                pieData.push({
+                  name: name === 'Salary Expense' ? 'Salaries & Wages' : name,
+                  value: val,
+                  color: palette[name] || fallbackColors[fbIdx++ % fallbackColors.length]
+                });
+              });
+          }
+        } catch (_) {}
+      }
     }
 
     // ----------------------------------------------------
