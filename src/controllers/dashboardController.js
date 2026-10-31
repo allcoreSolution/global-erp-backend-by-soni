@@ -77,7 +77,13 @@ const getDashboardSummary = async (req, res, next) => {
     const todayStr = new Date().toISOString().split('T')[0];
 
     // Base match filters for tenant isolation supporting both ObjectId and String
-    const dateMatch = { createdAt: { $gte: startOfYear, $lte: endOfYear } };
+    const dateMatch = {
+      $or: [
+        { createdAt: { $gte: startOfYear, $lte: endOfYear } },
+        { saleDate: { $gte: '2026-04-01', $lte: '2027-03-31' } },
+        { purchaseDate: { $gte: '2026-04-01', $lte: '2027-03-31' } }
+      ]
+    };
     const companyOid = (companyId && mongoose.Types.ObjectId.isValid(companyId)) ? new mongoose.Types.ObjectId(companyId.toString()) : null;
     const companyFilter = companyOid ? { $in: [companyId, companyId.toString(), companyOid] } : companyId;
     const tenantMatch = companyFilter ? { company: companyFilter } : {};
@@ -95,7 +101,13 @@ const getDashboardSummary = async (req, res, next) => {
         { $match: { ...tenantMatch, ...dateMatch } },
         {
           $group: {
-            _id: { $month: "$createdAt" },
+            _id: {
+              $cond: {
+                if: { $and: [ { $ne: ["$saleDate", null] }, { $ne: ["$saleDate", ""] } ] },
+                then: { $toInt: { $substrCP: ["$saleDate", 5, 2] } },
+                else: { $month: "$createdAt" }
+              }
+            },
             totalSales: { $sum: "$grandTotal" }
           }
         }
@@ -149,7 +161,13 @@ const getDashboardSummary = async (req, res, next) => {
         { $match: { ...tenantMatch, ...dateMatch } },
         {
           $group: {
-            _id: { $month: "$createdAt" },
+            _id: {
+              $cond: {
+                if: { $and: [ { $ne: ["$purchaseDate", null] }, { $ne: ["$purchaseDate", ""] } ] },
+                then: { $toInt: { $substrCP: ["$purchaseDate", 5, 2] } },
+                else: { $month: "$createdAt" }
+              }
+            },
             totalPurchase: { $sum: "$grandTotal" }
           }
         }
@@ -382,27 +400,91 @@ const getDashboardSummary = async (req, res, next) => {
     let creditorsAmount = 0;
 
     if (canViewAccounts || canViewSales || canViewPurchases) {
-      if (canViewSales || canViewAccounts) {
-        const unpaidSales = await Sale.aggregate([
-          { $match: { ...tenantMatch, paymentStatus: { $ne: 'Paid' } } },
-          { $group: { _id: null, balance: { $sum: { $subtract: ["$grandTotal", "$amountPaid"] } } } }
-        ]);
-        const rawDebtors = unpaidSales.length > 0 ? unpaidSales[0].balance : 0;
-        // Deduct sales return / credit note balance from customer dues
-        debtorsAmount = Math.max(0, rawDebtors - salesReturnGrand);
+      // 1. Double-Entry Party Ledger Calculation
+      try {
+        const Voucher = require('../models/Voucher');
+        const AccountLedger = require('../models/AccountLedger');
+        const { Customer } = require('../models/Customer');
+        const { Supplier } = require('../models/Supplier');
+
+        const customers = await Customer.find(tenantMatch).select('name customerCode').lean();
+        const customerNames = customers.map(c => (c.name || '').toLowerCase().trim());
+
+        const suppliers = await Supplier.find(tenantMatch).select('companyName supplierCode').lean();
+        const supplierNames = suppliers.map(s => (s.companyName || '').toLowerCase().trim());
+
+        const ledgers = await AccountLedger.find(tenantMatch).lean();
+        const vouchers = await Voucher.find({ ...tenantMatch, status: 'Posted' }).lean();
+
+        if (ledgers.length > 0 && vouchers.length > 0) {
+          const ledgerMap = {};
+          ledgers.forEach(l => {
+            ledgerMap[l._id.toString()] = {
+              name: (l.accountName || '').toLowerCase().trim(),
+              group: l.groupType,
+              dr: 0,
+              cr: 0
+            };
+          });
+
+          vouchers.forEach(v => {
+            v.entries.forEach(e => {
+              const accId = e.account?.toString();
+              if (ledgerMap[accId]) {
+                ledgerMap[accId].dr += (e.debitAmount || 0);
+                ledgerMap[accId].cr += (e.creditAmount || 0);
+              }
+            });
+          });
+
+          Object.values(ledgerMap).forEach(acc => {
+            if (customerNames.includes(acc.name)) {
+              const netDr = acc.dr - acc.cr;
+              if (netDr > 0) debtorsAmount += netDr;
+            } else if (supplierNames.includes(acc.name)) {
+              const netCr = acc.cr - acc.dr;
+              if (netCr > 0) creditorsAmount += netCr;
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Ledger outstanding calculation notice:', err.message);
       }
 
-      if (canViewPurchases || canViewAccounts) {
-        // Supplier payables: Net purchase dues
-        let rawCreditors = 0;
+      // 2. Operational Fallback if ledgers were empty
+      if (debtorsAmount === 0 && (canViewSales || canViewAccounts)) {
+        const unpaidSales = await Sale.aggregate([
+          { $match: { ...tenantMatch } },
+          { $group: { _id: null, totalGrand: { $sum: "$grandTotal" }, totalPaid: { $sum: "$amountPaid" } } }
+        ]);
+        const grossSales = unpaidSales.length > 0 ? unpaidSales[0].totalGrand : 0;
+        let totalReceipts = 0;
         try {
-          const { Supplier } = require('../models/Supplier');
-          const suppliers = await Supplier.find(tenantMatch);
-          suppliers.forEach(s => {
-            if (s.balance > 0) rawCreditors += s.balance;
-          });
+          const { Receipt } = require('../models/Receipt');
+          const rAgg = await Receipt.aggregate([
+            { $match: { ...tenantMatch } },
+            { $group: { _id: null, total: { $sum: "$paymentAmount" } } }
+          ]);
+          totalReceipts = rAgg.length > 0 ? rAgg[0].total : 0;
         } catch (_) {}
-        creditorsAmount = rawCreditors;
+        debtorsAmount = Math.max(0, grossSales - totalReceipts - salesReturnGrand);
+      }
+
+      if (creditorsAmount === 0 && (canViewPurchases || canViewAccounts)) {
+        const purAgg = await Purchase.aggregate([
+          { $match: { ...tenantMatch } },
+          { $group: { _id: null, totalGrand: { $sum: "$grandTotal" }, totalPaid: { $sum: "$amountPaid" } } }
+        ]);
+        const grossPurchases = purAgg.length > 0 ? purAgg[0].totalGrand : 0;
+        let totalPayments = 0;
+        try {
+          const pAgg = await Payment.aggregate([
+            { $match: { ...tenantMatch } },
+            { $group: { _id: null, total: { $sum: "$paymentAmount" } } }
+          ]);
+          totalPayments = pAgg.length > 0 ? pAgg[0].total : 0;
+        } catch (_) {}
+        creditorsAmount = Math.max(0, grossPurchases - totalPayments - purchaseReturnSub);
       }
 
       outstanding.debtors = parseFloat((debtorsAmount / 100000).toFixed(2));
